@@ -8,5 +8,18 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/romanvolodin/chat-ui.git"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.10",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8",
+    "vue": "^3.5.45",
+    "vue-tsc": "^3.3.14"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "scripts": {
+    "typecheck": "vue-tsc --noEmit"
   }
 }
