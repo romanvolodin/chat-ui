@@ -1,0 +1,19 @@
+# Зависимости
+node_modules/
+
+# Результаты сборки и Storybook
+dist/
+storybook-static/
+
+# Проверки и кэши
+coverage/
+*.tsbuildinfo
+.eslintcache
+
+# Логи
+*.log
+npm-debug.log*
+
+# Системные файлы
+.DS_Store
+Thumbs.db
