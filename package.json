@@ -1,0 +1,12 @@
+{
+  "name": "@romanvolodin/chat-ui",
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/romanvolodin/chat-ui.git"
+  }
+}
