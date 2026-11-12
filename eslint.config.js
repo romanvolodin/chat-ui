@@ -14,7 +14,7 @@ export default defineConfigWithVueTs(
 
   {
     // Файлы конфигурации лежат вне tsconfig.json, поэтому типы для них не проверяем
-    files: ['*.config.{js,ts}'],
+    files: ['*.config.{js,ts}', '.storybook/*.ts'],
     extends: [vueTsConfigs.disableTypeChecked],
     languageOptions: {
       parserOptions: { projectService: false },
