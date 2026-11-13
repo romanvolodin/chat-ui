@@ -1,5 +1,6 @@
 import type { MessageContent } from './content'
 import type { MessageId, UserId } from './ids'
+import type { ReplyTo } from './excerpt'
 import type { FormattedText } from './text'
 
 export type MessageStatus = 'sending' | 'sent' | 'read' | 'error'
@@ -11,6 +12,7 @@ export interface Message {
   /** Текст сообщения или подпись к вложению. */
   text?: FormattedText
   content?: MessageContent
+  replyTo?: ReplyTo
   /** Только у исходящих сообщений. */
   status?: MessageStatus
   /** Только при статусе `sending`, от 0 до 100. По нему рисуется индикатор загрузки. */
