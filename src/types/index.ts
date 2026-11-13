@@ -3,7 +3,10 @@ export type {
   AudioContent,
   FileContent,
   ImageContent,
+  MediaKind,
+  MediaPreview,
   MessageContent,
+  StickerContent,
   VideoCircleContent,
   VideoContent,
 } from './content'

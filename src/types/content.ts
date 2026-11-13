@@ -1,9 +1,19 @@
-interface VisualMedia {
+export type MediaKind = 'image' | 'video'
+
+export interface MediaPreview {
+  url: string
+  media: MediaKind
+}
+
+interface SizedMedia {
   url: string
   width: number
   height: number
-  /** Если не задана, показывается сам файл */
-  thumbnailUrl?: string
+}
+
+interface VisualMedia extends SizedMedia {
+  /** Лёгкая версия для чата. Если не задана, показывается сам файл. */
+  preview?: MediaPreview
 }
 
 export interface ImageContent extends VisualMedia {
@@ -42,5 +52,16 @@ export interface VideoCircleContent {
   durationSeconds?: number
 }
 
+export interface StickerContent extends SizedMedia {
+  type: 'sticker'
+  media: MediaKind
+}
+
 export type MessageContent =
-  ImageContent | VideoContent | AlbumContent | FileContent | AudioContent | VideoCircleContent
+  | ImageContent
+  | VideoContent
+  | AlbumContent
+  | FileContent
+  | AudioContent
+  | VideoCircleContent
+  | StickerContent
