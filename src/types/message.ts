@@ -32,6 +32,11 @@ export interface UserMessage {
 export interface SystemMessage {
   type: 'system'
   id: MessageId
+  /**
+   * Кто совершил действие: "Юзер3 переименовал чат"
+   * Автора может не быть: "Начало обсуждения"
+   */
+  authorId?: UserId
   sentAt: Date
   text: FormattedText
 }
