@@ -1,5 +1,5 @@
 import type { MessageExcerpt } from './excerpt'
-import type { ChatId } from './ids'
+import type { ChatId, UserId } from './ids'
 import type { MessageStatus } from './message'
 
 export type ChatType = 'private' | 'group' | 'channel' | 'discussion'
@@ -22,4 +22,8 @@ export interface Chat {
   unreadCount?: number
   unreadMentionCount?: number
   lastMessage?: LastMessage
+  /** Собеседник. Только у личных чатов. */
+  peerId?: UserId
+  memberCount?: number
+  typingUserIds?: UserId[]
 }
