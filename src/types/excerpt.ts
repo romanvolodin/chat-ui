@@ -7,7 +7,9 @@ import type { FormattedText } from './text'
  * цитата в ответе, последнее сообщение в списке чатов и закреплённые сообщения.
  */
 export interface MessageExcerpt {
-  authorId: UserId
+  /** Может быть не задан у системных сообщений */
+  authorId?: UserId
+  isSystem?: boolean
   text?: FormattedText
   contentKind?: MessageContent['type']
 }

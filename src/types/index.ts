@@ -1,4 +1,4 @@
-export type { Chat, ChatType } from './chat'
+export type { Chat, ChatType, LastMessage } from './chat'
 export type {
   AlbumContent,
   AudioContent,
