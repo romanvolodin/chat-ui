@@ -14,7 +14,7 @@ export interface Chat {
   id: ChatId
   type: ChatType
   title: string
-  avatar: string
+  avatar?: string
   subtitle?: string
   isPinned?: boolean
   isMuted?: boolean
