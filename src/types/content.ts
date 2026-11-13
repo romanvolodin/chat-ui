@@ -1,3 +1,5 @@
+import type { UserId } from './ids'
+
 export type MediaKind = 'image' | 'video'
 
 export interface MediaPreview {
@@ -57,6 +59,50 @@ export interface StickerContent extends SizedMedia {
   media: MediaKind
 }
 
+export interface PollOption {
+  id: string
+  text: string
+  voteCount: number
+  isChosen?: boolean
+}
+
+export interface PollContent {
+  type: 'poll'
+  question: string
+  options: PollOption[]
+}
+
+export interface LocationContent {
+  type: 'location'
+  latitude: number
+  longitude: number
+  /** Подпись под картой, например название места. */
+  label?: string
+  /** Картинка вместо настоящей карты. */
+  previewUrl: string
+}
+
+export interface ContactContent {
+  type: 'contact'
+  userId: UserId
+}
+
+export type CallDirection = 'incoming' | 'outgoing'
+
+export type CallKind = 'audio' | 'video'
+
+/** `cancelled`: звонок отменил сам звонящий, `declined`: его отклонил получатель. */
+export type CallResult = 'completed' | 'missed' | 'declined' | 'noAnswer' | 'cancelled'
+
+export interface CallContent {
+  type: 'call'
+  direction: CallDirection
+  kind: CallKind
+  result: CallResult
+  /** Только у состоявшегося звонка. */
+  durationSeconds?: number
+}
+
 export type MessageContent =
   | ImageContent
   | VideoContent
@@ -65,3 +111,7 @@ export type MessageContent =
   | AudioContent
   | VideoCircleContent
   | StickerContent
+  | PollContent
+  | LocationContent
+  | ContactContent
+  | CallContent
