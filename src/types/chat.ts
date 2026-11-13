@@ -39,6 +39,9 @@ export type ChatFooter =
 export interface OpenChat extends Chat {
   footer: ChatFooter
   messages: Message[]
+  /** Выше/ниже загруженных сообщений есть ещё. Если не задано - больше нет */
+  hasMoreBefore?: boolean
+  hasMoreAfter?: boolean
   pinned?: PinnedMessage[]
   draft?: FormattedText
   /** Адрес картинки. Иначе фон берётся из темы. */
