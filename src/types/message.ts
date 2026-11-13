@@ -15,4 +15,11 @@ export interface Message {
   status?: MessageStatus
   /** Только при статусе `sending`, от 0 до 100. По нему рисуется индикатор загрузки. */
   sendProgressPercent?: number
+  editedAt?: Date
+  isPinned?: boolean
+  viewCount?: number
+  /** Для кнопки "Прокомментировать" под сообщением канала.
+   *  Не задано: кнопка не показывается.
+   *  Ноль: «Прокомментировать». */
+  commentCount?: number
 }
