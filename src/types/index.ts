@@ -19,7 +19,7 @@ export type {
   VideoContent,
 } from './content'
 export type { ChatId, MessageId, UserId } from './ids'
-export type { Message, MessageStatus } from './message'
+export type { Message, MessageStatus, SystemMessage, UserMessage } from './message'
 export type { MessageExcerpt, ReplyTo } from './excerpt'
 export type { Reaction, ReactionIcon } from './reaction'
 export type { FormattedText, TextFormat, TextSegment } from './text'

@@ -6,7 +6,8 @@ import type { FormattedText } from './text'
 
 export type MessageStatus = 'sending' | 'sent' | 'read' | 'error'
 
-export interface Message {
+export interface UserMessage {
+  type: 'user'
   id: MessageId
   authorId: UserId
   sentAt: Date
@@ -27,3 +28,12 @@ export interface Message {
    *  Ноль: «Прокомментировать». */
   commentCount?: number
 }
+
+export interface SystemMessage {
+  type: 'system'
+  id: MessageId
+  sentAt: Date
+  text: FormattedText
+}
+
+export type Message = UserMessage | SystemMessage
