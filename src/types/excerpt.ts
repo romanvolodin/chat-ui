@@ -18,3 +18,8 @@ export interface ReplyTo {
   messageId: MessageId
   excerpt: MessageExcerpt
 }
+
+export interface PinnedMessage {
+  messageId: MessageId
+  excerpt: MessageExcerpt
+}

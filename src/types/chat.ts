@@ -1,6 +1,7 @@
-import type { MessageExcerpt } from './excerpt'
-import type { ChatId, UserId } from './ids'
-import type { MessageStatus } from './message'
+import type { MessageExcerpt, PinnedMessage } from './excerpt'
+import type { ChatId, MessageId, UserId } from './ids'
+import type { Message, MessageStatus } from './message'
+import type { FormattedText } from './text'
 
 export type ChatType = 'private' | 'group' | 'channel' | 'discussion'
 
@@ -37,4 +38,10 @@ export type ChatFooter =
 
 export interface OpenChat extends Chat {
   footer: ChatFooter
+  messages: Message[]
+  pinned?: PinnedMessage[]
+  draft?: FormattedText
+  /** Адрес картинки. Иначе фон берётся из темы. */
+  background?: string
+  firstUnreadMessageId?: MessageId
 }
