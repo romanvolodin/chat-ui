@@ -27,3 +27,14 @@ export interface Chat {
   memberCount?: number
   typingUserIds?: UserId[]
 }
+
+export type ChatFooter =
+  | { type: 'input' }
+  | { type: 'mute' }
+  | { type: 'join' }
+  | { type: 'unpinAll' }
+  | { type: 'readOnly'; text?: string }
+
+export interface OpenChat extends Chat {
+  footer: ChatFooter
+}
