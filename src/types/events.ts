@@ -1,4 +1,5 @@
-import type { ChatId, MessageId, UserId } from './ids'
+import type { CallKind } from './content'
+import type { ChatId, ListId, MessageId, UserId } from './ids'
 import type { ReactionIcon } from './reaction'
 import type { FormattedText } from './text'
 
@@ -34,4 +35,11 @@ export interface ChatEvents {
   unpinAllMessages: [payload: { chatId: ChatId }]
   openPinned: [payload: { chatId: ChatId }]
   openComments: [payload: { messageId: MessageId }]
+  search: [payload: { query: string; scope: 'global' | 'chat' }]
+  showReactionUsers: [payload: { messageId: MessageId; icon: ReactionIcon }]
+  openUser: [payload: { userId: UserId }]
+  startCall: [payload: { kind: CallKind }]
+  openLocation: [payload: { messageId: MessageId }]
+  reachedTop: [payload: { list: ListId }]
+  reachedBottom: [payload: { list: ListId }]
 }

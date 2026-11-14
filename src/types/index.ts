@@ -19,7 +19,7 @@ export type {
   VideoCircleContent,
   VideoContent,
 } from './content'
-export type { ChatId, MessageId, UserId } from './ids'
+export type { ChatId, ListId, MessageId, UserId } from './ids'
 export type { Message, MessageStatus, SystemMessage, UserMessage } from './message'
 export type { ChatEvents } from './events'
 export type { MessageExcerpt, PinnedMessage, ReplyTo } from './excerpt'
