@@ -9,7 +9,7 @@
     var(--chat-color-primary),
     var(--chat-color-secondary)
   );
-  --chat-background-image: none;
+  --chat-background-image: url('./background.png');
   --chat-background-blend-mode: soft-light;
 
   --chat-surface: #fff;
