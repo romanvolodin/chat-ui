@@ -7,4 +7,12 @@ export type ChatId = string
 export type MessageId = string
 
 export type ListId =
-  'chats' | 'archive' | 'messages' | 'searchResults' | 'members' | 'media' | 'files' | 'links'
+  | 'chats'
+  | 'archive'
+  | 'messages'
+  | 'searchResults'
+  | 'reactionUsers'
+  | 'members'
+  | 'media'
+  | 'files'
+  | 'links'

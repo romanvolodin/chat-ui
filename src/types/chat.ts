@@ -1,6 +1,7 @@
 import type { MessageExcerpt, PinnedMessage } from './excerpt'
 import type { ChatId, MessageId, UserId } from './ids'
-import type { Message, MessageStatus } from './message'
+import type { Message, MessageStatus, UserMessage } from './message'
+import type { ReactionIcon } from './reaction'
 import type { FormattedText } from './text'
 
 export type ChatType = 'private' | 'group' | 'channel' | 'discussion'
@@ -36,6 +37,21 @@ export type ChatFooter =
   | { type: 'unpinAll' }
   | { type: 'readOnly'; text?: string }
 
+/** Если поле не задано, значит окно "Инфо чата" ещё не загружено. */
+export interface ChatInfo {
+  members?: UserId[]
+  media?: UserMessage[]
+  files?: UserMessage[]
+  links?: UserMessage[]
+}
+
+/** Привязаны к паре "сообщение и реакция": ответ на другую пару интерфейс игнорирует. */
+export interface ReactionUsers {
+  messageId: MessageId
+  icon: ReactionIcon
+  userIds: UserId[]
+}
+
 export interface OpenChat extends Chat {
   footer: ChatFooter
   messages: Message[]
@@ -47,4 +63,6 @@ export interface OpenChat extends Chat {
   /** Адрес картинки. Иначе фон берётся из темы. */
   background?: string
   firstUnreadMessageId?: MessageId
+  info?: ChatInfo
+  reactionUsers?: ReactionUsers
 }
