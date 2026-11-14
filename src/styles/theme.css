@@ -1,0 +1,70 @@
+/* :where() обнуляет специфичность, чтобы тема проекта побеждала независимо от порядка подключения */
+:where(.chat-root) {
+  --chat-font-family: Roboto, system-ui, sans-serif;
+
+  --chat-color-primary: #b2d6a9;
+  --chat-color-secondary: #3da9a7;
+  --chat-background-gradient: linear-gradient(
+    135deg,
+    var(--chat-color-primary),
+    var(--chat-color-secondary)
+  );
+  --chat-background-image: none;
+  --chat-background-blend-mode: soft-light;
+
+  --chat-surface: #fff;
+  --chat-surface-hover: #f2f2f2;
+  --chat-search-background: #f2f2f2;
+
+  --chat-text-color: #000;
+  --chat-text-muted: #999;
+  --chat-text-placeholder: #888;
+  --chat-icon-color: #999;
+
+  --chat-accent: #65b8a8;
+  --chat-on-accent: #fff;
+  --chat-on-accent-muted: hsl(168deg 37% 90%);
+  --chat-accent-text: color-mix(in srgb, var(--chat-accent) 77%, #000);
+  --chat-accent-tint: color-mix(in srgb, var(--chat-accent) 19%, transparent);
+
+  --chat-bubble-incoming-background: #fff;
+  --chat-bubble-outgoing-background: #d4f7e5;
+  --chat-bubble-radius: 15px;
+  --chat-bubble-radius-joined: 5px;
+  --chat-bubble-padding: 7px 10px;
+  --chat-bubble-max-width: clamp(200px, 90%, 450px);
+  --chat-bubble-gap: 3px;
+  --chat-message-group-gap: 10px;
+
+  --chat-time-opacity: 0.3;
+  --chat-media-meta-background: #00000025;
+  --chat-media-meta-color: #eee;
+
+  --chat-online-dot-color: #31b874;
+  --chat-online-text-color: #1fb3b5;
+  --chat-unread-background: #21a5e2;
+  --chat-unread-muted-background: #bbb;
+  --chat-unread-color: #fff;
+
+  --chat-reaction-background: #0099731a;
+  --chat-reaction-color: #009973;
+
+  --chat-overlay-background: #00000033;
+  --chat-overlay-color: #fff;
+
+  --chat-avatar-text-color: #fff;
+  --chat-avatar-color-1: #e6194b;
+  --chat-avatar-color-2: #3cb44b;
+  --chat-avatar-color-3: #e6c700;
+  --chat-avatar-color-4: #4363d8;
+  --chat-avatar-color-5: #f58231;
+  --chat-avatar-color-6: #911eb4;
+
+  --chat-sidebar-width: clamp(300px, 23%, 600px);
+  --chat-header-height: 70px;
+  --chat-dialog-max-width: 750px;
+  --chat-composer-margin: 15px;
+  --chat-composer-radius: 15px;
+  --chat-video-circle-size: 170px;
+  --chat-video-circle-size-open: 270px;
+}
