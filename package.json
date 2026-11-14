@@ -55,6 +55,7 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/chat-ui.js"
-    }
+    },
+    "./style.css": "./dist/style.css"
   }
 }
