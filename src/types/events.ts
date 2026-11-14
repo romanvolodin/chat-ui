@@ -1,6 +1,7 @@
 import type { CallKind } from './content'
 import type { ChatId, ListId, MessageId, UserId } from './ids'
 import type { ReactionIcon } from './reaction'
+import type { SearchScope } from './search'
 import type { FormattedText } from './text'
 
 export interface ChatEvents {
@@ -35,7 +36,7 @@ export interface ChatEvents {
   unpinAllMessages: [payload: { chatId: ChatId }]
   openPinned: [payload: { chatId: ChatId }]
   openComments: [payload: { messageId: MessageId }]
-  search: [payload: { query: string; scope: 'global' | 'chat' }]
+  search: [payload: { query: string; scope: SearchScope }]
   showReactionUsers: [payload: { messageId: MessageId; icon: ReactionIcon }]
   openUser: [payload: { userId: UserId }]
   startCall: [payload: { kind: CallKind }]

@@ -1,5 +1,6 @@
 import type { Chat, OpenChat } from './chat'
 import type { ListId, UserId } from './ids'
+import type { SearchResults } from './search'
 import type { UserDirectory } from './user'
 
 export interface ChatRootData {
@@ -15,4 +16,5 @@ export interface ChatRootData {
   loadingLists?: ListId[]
   /** Ответ на событие `getLink`: интерфейс копирует адрес в буфер обмена. */
   requestedLink?: { url: string }
+  searchResults?: SearchResults
 }
