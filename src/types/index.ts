@@ -24,5 +24,6 @@ export type { Message, MessageStatus, SystemMessage, UserMessage } from './messa
 export type { ChatEvent, ChatEvents } from './events'
 export type { MessageExcerpt, PinnedMessage, ReplyTo } from './excerpt'
 export type { Reaction, ReactionIcon } from './reaction'
+export type { ChatRootData } from './root'
 export type { FormattedText, TextFormat, TextSegment } from './text'
 export type { User, UserDirectory } from './user'
