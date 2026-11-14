@@ -43,3 +43,8 @@ export interface ChatEvents {
   reachedTop: [payload: { list: ListId }]
   reachedBottom: [payload: { list: ListId }]
 }
+
+/** Единый поток событий: `type` и рядом поля нагрузки, поэтому в нагрузках нет поля `type`. */
+export type ChatEvent = {
+  [K in keyof ChatEvents]: ChatEvents[K] extends [payload: infer P] ? { type: K } & P : { type: K }
+}[keyof ChatEvents]
