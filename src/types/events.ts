@@ -1,4 +1,4 @@
-import type { ChatId, MessageId } from './ids'
+import type { ChatId, MessageId, UserId } from './ids'
 import type { ReactionIcon } from './reaction'
 import type { FormattedText } from './text'
 
@@ -26,4 +26,12 @@ export interface ChatEvents {
   vote: [payload: { messageId: MessageId; optionId: string | null }]
   forwardMessages: [payload: { messageIds: MessageId[]; chatId: ChatId }]
   getLink: [payload: { messageId: MessageId } | { chatId: ChatId }]
+  setChatMuted: [payload: { chatId: ChatId; isMuted: boolean }]
+  setChatPinned: [payload: { chatId: ChatId; isPinned: boolean }]
+  setChatArchived: [payload: { chatId: ChatId; isArchived: boolean }]
+  setUserBlocked: [payload: { userId: UserId; isBlocked: boolean }]
+  joinChat: [payload: { chatId: ChatId }]
+  unpinAllMessages: [payload: { chatId: ChatId }]
+  openPinned: [payload: { chatId: ChatId }]
+  openComments: [payload: { messageId: MessageId }]
 }
