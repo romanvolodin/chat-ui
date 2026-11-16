@@ -42,9 +42,9 @@
 
   --chat-online-dot-color: #31b874;
   --chat-online-text-color: #1fb3b5;
-  --chat-unread-background: #21a5e2;
-  --chat-unread-muted-background: #bbb;
-  --chat-unread-color: #fff;
+  --chat-badge-background: #21a5e2;
+  --chat-badge-muted-background: #bbb;
+  --chat-badge-color: #fff;
 
   --chat-reaction-background: #0099731a;
   --chat-reaction-color: #009973;
