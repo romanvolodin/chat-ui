@@ -20,6 +20,7 @@
   --chat-text-muted: #999;
   --chat-text-placeholder: #888;
   --chat-icon-color: #999;
+  --chat-icon-stroke-width: 2;
 
   --chat-accent: #65b8a8;
   --chat-on-accent: #fff;
