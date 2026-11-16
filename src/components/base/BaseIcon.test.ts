@@ -47,7 +47,7 @@ describe('icons', () => {
   it('контуры начинаются с команды перемещения и содержат только допустимые символы', () => {
     for (const [name, paths] of Object.entries(icons)) {
       for (const path of paths) {
-        expect(path, name).toMatch(/^M[MmLlHhVvCcSsQqTtAaZz0-9 .,-]+$/)
+        expect(path, name).toMatch(/^[Mm][MmLlHhVvCcSsQqTtAaZz0-9 .,-]+$/)
       }
     }
   })
