@@ -55,7 +55,7 @@ export async function generateIconsSource(): Promise<string> {
     return `  '${name}': [${paths.map((path) => `'${path}'`).join(', ')}],`
   })
   const source = [
-    '// Файл создаёт `npm run icons` из src/icons/*.svg, вручную его не правят',
+    '// Этот файл генерируется командой `npm run icons` из иконок src/icons/*.svg, вручную править не надо',
     'export const icons = {',
     ...entries,
     '} as const satisfies Record<string, readonly string[]>',
