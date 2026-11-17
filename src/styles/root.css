@@ -1,4 +1,6 @@
 .chat-root {
+  position: relative;
+  isolation: isolate;
   color: var(--chat-text-color);
   font-family: var(--chat-font-family);
 }
