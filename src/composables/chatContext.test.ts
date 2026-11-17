@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp, h, reactive } from 'vue'
 import type { ChatRootProps } from '../types'
 import { provideChatContext, useChatContext, type ChatContext } from './chatContext'
@@ -27,6 +27,10 @@ function mountTree(props: ChatRootProps, withProvider = true) {
   return injected
 }
 
+afterEach(() => {
+  vi.useRealTimers()
+})
+
 describe('контекст чата', () => {
   it('отдаёт потомкам текущего пользователя и справочник', () => {
     const context = mountTree(baseProps())
@@ -54,9 +58,11 @@ describe('контекст чата', () => {
   })
 
   it('без настроек идут реальные часы и пояс устройства', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-11-17T10:00:00Z'))
     const context = mountTree(baseProps())
     expect(context.timeZone.value).toBeUndefined()
-    expect(Math.abs(context.now.value.getTime() - Date.now())).toBeLessThan(5000)
+    expect(context.now.value.toISOString()).toBe('2026-11-17T10:00:00.000Z')
   })
 
   it('по умолчанию режим «только чтение» выключен', () => {
