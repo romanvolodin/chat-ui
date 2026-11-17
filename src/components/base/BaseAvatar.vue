@@ -84,7 +84,8 @@ const colorClass = computed(
   right: 0;
   bottom: 0;
   box-sizing: border-box;
-  border: calc(var(--chat-avatar-size) * 0.06) solid var(--chat-surface);
+  border: calc(var(--chat-avatar-size) * 0.06) solid
+    var(--chat-avatar-ring-color, var(--chat-surface));
   border-radius: 50%;
   background-color: var(--chat-online-dot-color);
   width: calc(var(--chat-avatar-size) * 0.32);
