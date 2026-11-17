@@ -1,6 +1,7 @@
 import type { Chat, OpenChat } from './chat'
 import type { ListId, UserId } from './ids'
 import type { SearchResults } from './search'
+import type { ChatSettings } from './settings'
 import type { UserDirectory } from './user'
 
 export interface ChatRootData {
@@ -17,4 +18,10 @@ export interface ChatRootData {
   /** Ответ на событие `getLink`: интерфейс копирует адрес в буфер обмена. */
   requestedLink?: { url: string }
   searchResults?: SearchResults
+}
+
+export interface ChatRootProps extends ChatRootData {
+  settings?: ChatSettings
+  /** Режим «только чтение» для встроенного чата. */
+  isReadOnly?: boolean
 }

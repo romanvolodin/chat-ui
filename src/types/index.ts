@@ -32,7 +32,7 @@ export type { Message, MessageStatus, SystemMessage, UserMessage } from './messa
 export type { ChatEvent, ChatEvents } from './events'
 export type { MessageExcerpt, PinnedMessage, ReplyTo } from './excerpt'
 export type { Reaction, ReactionIcon } from './reaction'
-export type { ChatRootData } from './root'
+export type { ChatRootData, ChatRootProps } from './root'
 export type { SearchMessageResult, SearchResults, SearchScope } from './search'
 export type { ChatSettings } from './settings'
 export type { FormattedText, TextFormat, TextSegment } from './text'
