@@ -8,6 +8,8 @@ export const sampleUsers: UserDirectory = {
   ivan: { id: 'ivan', name: 'Иван Петров', isOnline: true },
   anna: { id: 'anna', name: 'Анна Смирнова' },
   oleg: { id: 'oleg', name: 'Олег' },
+  maria: { id: 'maria', name: 'Мария', lastActiveAt: new Date(sampleNow.getTime() - 25 * 60_000) },
+  helper: { id: 'helper', name: 'Помощник', isBot: true },
 }
 
 const minutesAgo = (minutes: number) => new Date(sampleNow.getTime() - minutes * 60_000)
