@@ -66,6 +66,7 @@
 
   --chat-sidebar-width: clamp(300px, 23%, 600px);
   --chat-header-height: 70px;
+  --chat-footer-bar-height: 56px;
   --chat-dialog-max-width: 750px;
   --chat-composer-margin: 15px;
   --chat-composer-radius: 15px;
