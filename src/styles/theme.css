@@ -34,6 +34,7 @@
   --chat-bubble-outgoing-background: #d4f7e5;
   --chat-bubble-radius: 15px;
   --chat-bubble-radius-joined: 5px;
+  --chat-bubble-radius-tail: 0;
   --chat-bubble-padding: 7px 10px;
   --chat-bubble-max-width: clamp(200px, 90%, 450px);
   --chat-bubble-gap: 3px;
