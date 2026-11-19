@@ -15,5 +15,6 @@ describe('ChatEvent', () => {
 
   it('у события без данных есть только type', () => {
     expectTypeOf<keyof EventOf<'goToLatest'>>().toEqualTypeOf<'type'>()
+    expectTypeOf<keyof EventOf<'closeChat'>>().toEqualTypeOf<'type'>()
   })
 })

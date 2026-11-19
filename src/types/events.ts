@@ -6,6 +6,7 @@ import type { FormattedText } from './text'
 
 export interface ChatEvents {
   selectChat: [payload: { chatId: ChatId }]
+  closeChat: []
   readUntil: [payload: { messageId: MessageId }]
   goToMessage: [payload: { messageId: MessageId }]
   goToLatest: []

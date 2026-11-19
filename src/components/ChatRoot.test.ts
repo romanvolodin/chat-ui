@@ -41,7 +41,14 @@ describe('ChatRoot', () => {
 
   it('объявляет все события контракта', () => {
     const emits = ChatRoot.emits as string[]
-    for (const name of ['selectChat', 'sendMessage', 'deleteMessages', 'reachedTop', 'startCall']) {
+    for (const name of [
+      'selectChat',
+      'closeChat',
+      'sendMessage',
+      'deleteMessages',
+      'reachedTop',
+      'startCall',
+    ]) {
       expect(emits, name).toContain(name)
     }
   })
