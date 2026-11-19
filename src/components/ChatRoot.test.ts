@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp, h, nextTick, reactive, type App, type Component } from 'vue'
-import { pinnedChat, sampleChats, sampleNow, sampleTimeZone, sampleUsers } from '../docs/sampleData'
+import {
+  channelChat,
+  pinnedChat,
+  sampleChats,
+  sampleNow,
+  sampleTimeZone,
+  sampleUsers,
+} from '../docs/sampleData'
 import type { OpenChat } from '../types'
 import ChatRoot from './ChatRoot.vue'
 
@@ -124,6 +131,14 @@ describe('ChatRoot', () => {
       const { container } = mount({ openChat, onCloseChat })
       container.querySelector<HTMLElement>('.chat-header__back button')?.click()
       expect(onCloseChat).toHaveBeenCalledOnce()
+    })
+
+    it('нижняя панель открытого чата сообщает движку о своих действиях', () => {
+      const onJoinChat = vi.fn()
+      const channel: OpenChat = { ...channelChat, footer: { type: 'join' }, messages: [] }
+      const { container } = mount({ openChat: channel, onJoinChat })
+      container.querySelector<HTMLElement>('.chat-footer-action')?.click()
+      expect(onJoinChat).toHaveBeenCalledWith({ chatId: channelChat.id })
     })
 
     it('отмечает открытый чат в списке', () => {

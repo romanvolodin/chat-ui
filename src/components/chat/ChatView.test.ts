@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { pinnedChat } from '../../docs/sampleData'
+import { channelChat, pinnedChat } from '../../docs/sampleData'
 import { mountWithChatContext } from '../../test-utils/mountWithChatContext'
 import type { OpenChat } from '../../types'
 import ChatView from './ChatView.vue'
@@ -24,5 +24,13 @@ describe('ChatView', () => {
     mounted = mountWithChatContext(ChatView, { chat, onCloseChat })
     mounted.container.querySelector<HTMLElement>('.chat-header__back button')?.click()
     expect(onCloseChat).toHaveBeenCalledOnce()
+  })
+
+  it('показывает нижнюю панель и передаёт наружу её действия', () => {
+    const onJoinChat = vi.fn()
+    const channel: OpenChat = { ...channelChat, footer: { type: 'join' }, messages: [] }
+    mounted = mountWithChatContext(ChatView, { chat: channel, onJoinChat })
+    mounted.container.querySelector<HTMLElement>('.chat-footer-action')?.click()
+    expect(onJoinChat).toHaveBeenCalledWith({ chatId: channelChat.id })
   })
 })

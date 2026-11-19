@@ -32,7 +32,14 @@ const pane = computed(() => (props.openChat ? 'chat' : 'list'))
         />
       </div>
       <div class="chat-root__view">
-        <ChatView v-if="openChat" :chat="openChat" @close-chat="emit('closeChat')" />
+        <ChatView
+          v-if="openChat"
+          :chat="openChat"
+          @close-chat="emit('closeChat')"
+          @set-chat-muted="emit('setChatMuted', $event)"
+          @join-chat="emit('joinChat', $event)"
+          @unpin-all-messages="emit('unpinAllMessages', $event)"
+        />
         <p v-else class="chat-root__empty">Выберите чат</p>
       </div>
     </div>

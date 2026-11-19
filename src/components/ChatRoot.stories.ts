@@ -11,7 +11,13 @@ const frameStyle =
 
 function openChatOf(chatId: ChatId): OpenChat | undefined {
   const chat = sampleChats.find((item) => item.id === chatId)
-  return chat ? { ...chat, footer: { type: 'input' }, messages: [] } : undefined
+  return chat
+    ? {
+        ...chat,
+        footer: chat.type === 'channel' ? { type: 'mute' } : { type: 'input' },
+        messages: [],
+      }
+    : undefined
 }
 
 const meta = {
@@ -63,17 +69,21 @@ export const СИмитациейДвижка: Story = {
       function onSelectChat(payload: { chatId: ChatId }) {
         openChat.value = openChatOf(payload.chatId)
       }
+      function onSetChatMuted(payload: { isMuted: boolean }) {
+        if (openChat.value) openChat.value = { ...openChat.value, isMuted: payload.isMuted }
+      }
       return {
         args,
         frameStyle,
         openChat,
         onSelectChat,
+        onSetChatMuted,
         themeStyle: { '--chat-font-family': fontFamilies[String(globals.font)] },
       }
     },
     template: `
       <div :style="frameStyle">
-        <ChatRoot v-bind="args" :open-chat="openChat" :style="themeStyle" @select-chat="onSelectChat" @close-chat="openChat = undefined" />
+        <ChatRoot v-bind="args" :open-chat="openChat" :style="themeStyle" @select-chat="onSelectChat" @close-chat="openChat = undefined" @set-chat-muted="onSetChatMuted" />
       </div>`,
   }),
 }
