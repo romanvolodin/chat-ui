@@ -1,6 +1,9 @@
+import { pluralize } from './plural'
+
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 const WEEKDAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
-const MS_PER_DAY = 24 * 60 * 60 * 1000
+const MS_PER_MINUTE = 60 * 1000
+const MS_PER_DAY = 24 * 60 * MS_PER_MINUTE
 
 interface CalendarParts {
   year: number
@@ -71,4 +74,28 @@ export function formatChatListTime(date: Date, now: Date, timeZone?: string): st
   const dayAndMonth = `${String(parts.day)} ${MONTHS[parts.month - 1] ?? ''}`
   const isSameYear = parts.year === calendarParts(now, timeZone).year
   return isSameYear ? dayAndMonth : `${dayAndMonth} ${String(parts.year)}`
+}
+
+/**
+ * Хвост строки «был в сети …»: «только что», «5 минут назад», дальше «сегодня в 14:35»,
+ * «вчера в 14:35», `12 ноя в 14:35`, а для прошлых лет `12 ноя 2025`. День считается в часовом поясе чата.
+ */
+export function formatLastSeen(date: Date, now: Date, timeZone?: string): string {
+  const minutes = Math.floor((now.getTime() - date.getTime()) / MS_PER_MINUTE)
+  if (minutes < 1) return 'только что'
+  if (minutes < 60)
+    return `${String(minutes)} ${pluralize(minutes, ['минуту', 'минуты', 'минут'])} назад`
+
+  const parts = calendarParts(date, timeZone)
+  const nowParts = calendarParts(now, timeZone)
+  const clock = `${parts.hour}:${parts.minute}`
+  const daysAgo = dayNumber(nowParts) - dayNumber(parts)
+
+  if (daysAgo === 0) return `сегодня в ${clock}`
+  if (daysAgo === 1) return `вчера в ${clock}`
+
+  const dayAndMonth = `${String(parts.day)} ${MONTHS[parts.month - 1] ?? ''}`
+  return parts.year === nowParts.year
+    ? `${dayAndMonth} в ${clock}`
+    : `${dayAndMonth} ${String(parts.year)}`
 }
