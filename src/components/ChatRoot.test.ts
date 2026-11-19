@@ -39,6 +39,11 @@ describe('ChatRoot', () => {
     expect(mount().container.querySelector('.chat-root')).not.toBeNull()
   })
 
+  it('несёт классы корня и темы', () => {
+    const root = mount().container.querySelector('.chat-root')
+    expect(root?.classList.contains('chat-theme')).toBe(true)
+  })
+
   it('передаёт класс проекта на корневой элемент: так переопределяется тема', () => {
     const root = mount({ class: 'my-theme' }).container.querySelector('.chat-root')
     expect(root?.classList.contains('my-theme')).toBe(true)

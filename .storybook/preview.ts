@@ -11,7 +11,7 @@ const withChatRoot: Decorator = (_story, context) =>
     : {
         setup: () => ({ fontFamily: fontFamilies[String(context.globals['font'])] }),
         template:
-          '<div class="chat-root" :style="{ \'--chat-font-family\': fontFamily }"><story /></div>',
+          '<div class="chat-theme" :style="{ \'--chat-font-family\': fontFamily }"><story /></div>',
       }
 
 const preview: Preview = {

@@ -15,7 +15,7 @@ const pane = computed(() => (props.openChat ? 'chat' : 'list'))
 </script>
 
 <template>
-  <div class="chat-root chat-root--instance">
+  <div class="chat-root chat-theme">
     <div class="chat-root__layout" :data-pane="pane">
       <div class="chat-root__sidebar">
         <ChatSidebar
@@ -38,18 +38,6 @@ const pane = computed(() => (props.openChat ? 'chat' : 'list'))
 </template>
 
 <style>
-/* Отдельный класс, чтобы стили экземпляра не попадали на обёртку `.chat-root` в историях Storybook */
-.chat-root--instance {
-  container-type: inline-size;
-  background:
-    var(--chat-background-image) center,
-    var(--chat-background-gradient);
-  background-blend-mode: var(--chat-background-blend-mode);
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
 .chat-root__layout {
   display: grid;
   grid-template-columns: var(--chat-sidebar-width) minmax(0, 1fr);

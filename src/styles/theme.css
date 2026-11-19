@@ -1,5 +1,5 @@
 /* :where() обнуляет специфичность, чтобы тема проекта побеждала независимо от порядка подключения */
-:where(.chat-root) {
+:where(.chat-theme) {
   --chat-font-family: Roboto, system-ui, sans-serif;
 
   --chat-color-primary: #b2d6a9;
@@ -71,4 +71,9 @@
   --chat-composer-radius: 15px;
   --chat-video-circle-size: 170px;
   --chat-video-circle-size-open: 270px;
+}
+
+.chat-theme {
+  color: var(--chat-text-color);
+  font-family: var(--chat-font-family);
 }
