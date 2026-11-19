@@ -112,6 +112,20 @@ describe('ChatRoot', () => {
       expect(layout?.getAttribute('data-pane')).toBe('list')
     })
 
+    it('с открытым чатом рисует диалог с шапкой', () => {
+      const { container } = mount({ openChat })
+      expect(container.querySelector('.chat-view .chat-header__title')?.textContent).toBe(
+        'Иван Петров',
+      )
+    })
+
+    it('кнопка «назад» в шапке сообщает движку о закрытии чата', () => {
+      const onCloseChat = vi.fn()
+      const { container } = mount({ openChat, onCloseChat })
+      container.querySelector<HTMLElement>('.chat-header__back button')?.click()
+      expect(onCloseChat).toHaveBeenCalledOnce()
+    })
+
     it('отмечает открытый чат в списке', () => {
       const { container } = mount({ openChat })
       const selected = container.querySelectorAll('.chat-list-item--selected')

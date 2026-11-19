@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { provideChatContext } from '../composables/chatContext'
 import type { ChatEvents, ChatRootProps } from '../types'
+import ChatView from './chat/ChatView.vue'
 import ChatSidebar from './chats/ChatSidebar.vue'
 
 const props = defineProps<ChatRootProps>()
@@ -31,7 +32,8 @@ const pane = computed(() => (props.openChat ? 'chat' : 'list'))
         />
       </div>
       <div class="chat-root__view">
-        <p v-if="!openChat" class="chat-root__empty">Выберите чат</p>
+        <ChatView v-if="openChat" :chat="openChat" @close-chat="emit('closeChat')" />
+        <p v-else class="chat-root__empty">Выберите чат</p>
       </div>
     </div>
   </div>
@@ -67,6 +69,9 @@ const pane = computed(() => (props.openChat ? 'chat' : 'list'))
 @container (max-width: 700px) {
   .chat-root__layout {
     grid-template-columns: minmax(0, 1fr);
+
+    /* Кнопка «назад» в шапке нужна, только пока диалог занимает всё место */
+    --chat-back-button-display: block;
   }
 
   /* Оба слоя в одной ячейке; скрытый остаётся в потоке, поэтому прокрутка списка не сбрасывается */

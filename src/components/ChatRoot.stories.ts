@@ -72,13 +72,8 @@ export const СИмитациейДвижка: Story = {
       }
     },
     template: `
-      <div>
-        <p style="margin: 0 0 8px">
-          <button type="button" @click="openChat = undefined">closeChat: движок сбрасывает открытый чат</button>
-        </p>
-        <div :style="frameStyle">
-          <ChatRoot v-bind="args" :open-chat="openChat" :style="themeStyle" @select-chat="onSelectChat" />
-        </div>
+      <div :style="frameStyle">
+        <ChatRoot v-bind="args" :open-chat="openChat" :style="themeStyle" @select-chat="onSelectChat" @close-chat="openChat = undefined" />
       </div>`,
   }),
 }
