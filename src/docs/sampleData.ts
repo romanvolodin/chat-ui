@@ -1,4 +1,4 @@
-import type { Chat, UserDirectory } from '../types'
+import type { Chat, SearchResults, UserDirectory } from '../types'
 
 export const sampleNow = new Date('2026-11-17T12:00:00Z')
 export const sampleTimeZone = 'Europe/Moscow'
@@ -106,3 +106,26 @@ export const sampleChats: Chat[] = [
   sentChat,
   failedChat,
 ]
+
+export function sampleSearchResults(query: string): Extract<SearchResults, { scope: 'global' }> {
+  return {
+    scope: 'global',
+    query,
+    chats: [groupChat, ownPhotoChat],
+    users: ['ivan', 'anna'],
+    messages: [
+      {
+        chatId: groupChat.id,
+        messageId: 'm1',
+        excerpt: { authorId: 'anna', text: [{ text: 'Завтра сбор в 8:00 на первой точке' }] },
+        sentAt: new Date(sampleNow.getTime() - 60 * 60_000),
+      },
+      {
+        chatId: 'unknown-chat',
+        messageId: 'm2',
+        excerpt: { authorId: 'oleg', text: [{ text: 'Договорились о сроках' }] },
+        sentAt: new Date(sampleNow.getTime() - 3 * 24 * 60 * 60_000),
+      },
+    ],
+  }
+}
