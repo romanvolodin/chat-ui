@@ -1,6 +1,20 @@
 import { pluralize } from './plural'
 
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+const MONTHS_GENITIVE = [
+  'января',
+  'февраля',
+  'марта',
+  'апреля',
+  'мая',
+  'июня',
+  'июля',
+  'августа',
+  'сентября',
+  'октября',
+  'ноября',
+  'декабря',
+]
 const WEEKDAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
 const MS_PER_MINUTE = 60 * 1000
 const MS_PER_DAY = 24 * 60 * MS_PER_MINUTE
@@ -98,4 +112,23 @@ export function formatLastSeen(date: Date, now: Date, timeZone?: string): string
   return parts.year === nowParts.year
     ? `${dayAndMonth} в ${clock}`
     : `${dayAndMonth} ${String(parts.year)}`
+}
+
+/** Ключ календарного дня в часовом поясе чата, например `2026-11-17`: по нему сообщения делятся на дни. */
+export function getDayKey(date: Date, timeZone?: string): string {
+  const { year, month, day } = calendarParts(date, timeZone)
+  return `${String(year)}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+/** Заголовок дня в ленте: «Сегодня», «Вчера», `17 ноября`, а для прошлых лет `17 ноября 2025`. */
+export function formatDayHeading(date: Date, now: Date, timeZone?: string): string {
+  const parts = calendarParts(date, timeZone)
+  const nowParts = calendarParts(now, timeZone)
+  const daysAgo = dayNumber(nowParts) - dayNumber(parts)
+
+  if (daysAgo === 0) return 'Сегодня'
+  if (daysAgo === 1) return 'Вчера'
+
+  const dayAndMonth = `${String(parts.day)} ${MONTHS_GENITIVE[parts.month - 1] ?? ''}`
+  return parts.year === nowParts.year ? dayAndMonth : `${dayAndMonth} ${String(parts.year)}`
 }
