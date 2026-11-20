@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
 import { mountWithChatContext } from '../../test-utils/mountWithChatContext'
 import type { UserMessage } from '../../types'
 import MessageBubble from './MessageBubble.vue'
@@ -18,8 +19,11 @@ afterEach(() => {
   mounted = undefined
 })
 
-function mount(props: Record<string, unknown> = {}) {
-  mounted = mountWithChatContext(MessageBubble, { message, ...props })
+function mount(
+  props: Record<string, unknown> = {},
+  slots?: Parameters<typeof mountWithChatContext>[2],
+) {
+  mounted = mountWithChatContext(MessageBubble, { message, ...props }, slots)
   const bubble = mounted.container.querySelector<HTMLElement>('.chat-bubble')
   if (!bubble) throw new Error('Пузырь не нарисован')
   return bubble
@@ -103,5 +107,18 @@ describe('MessageBubble', () => {
     })
     bubble.querySelector<HTMLElement>('.chat-text-mention')?.click()
     expect(onOpenUser).toHaveBeenCalledWith({ userId: 'anna' })
+  })
+
+  describe('слот «header»', () => {
+    it('показывается над текстом', () => {
+      const bubble = mount({}, { header: () => h('span', { class: 'author' }, 'Иван') })
+      const header = bubble.querySelector('.chat-bubble__header')
+      expect(header?.textContent).toBe('Иван')
+      expect(header?.nextElementSibling?.classList.contains('chat-message-text')).toBe(true)
+    })
+
+    it('без слота шапки нет', () => {
+      expect(mount().querySelector('.chat-bubble__header')).toBeNull()
+    })
   })
 })

@@ -37,6 +37,7 @@ const meta = computed(() => ({
       },
     ]"
   >
+    <div v-if="$slots.header" class="chat-bubble__header"><slot name="header" /></div>
     <MessageText
       v-if="message.text?.length"
       :text="message.text"
@@ -93,6 +94,10 @@ const meta = computed(() => ({
 
 .chat-bubble--outgoing:not(.chat-bubble--joined-after) {
   border-bottom-right-radius: var(--chat-bubble-radius-tail);
+}
+
+.chat-bubble__header {
+  margin-bottom: 2px;
 }
 
 /* Мета стоит в потоке текста и прижата вправо:
