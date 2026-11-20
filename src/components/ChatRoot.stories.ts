@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 import { fontFamilies } from '../docs/fonts'
+import { sampleMessages } from '../docs/sampleMessages'
 import { pinnedChat, sampleChats, sampleNow, sampleTimeZone, sampleUsers } from '../docs/sampleData'
 import type { ChatId, OpenChat } from '../types'
 import ChatRoot from './ChatRoot.vue'
@@ -15,7 +16,7 @@ function openChatOf(chatId: ChatId): OpenChat | undefined {
     ? {
         ...chat,
         footer: chat.type === 'channel' ? { type: 'mute' } : { type: 'input' },
-        messages: [],
+        messages: sampleMessages,
       }
     : undefined
 }

@@ -34,11 +34,17 @@ const pane = computed(() => (props.openChat ? 'chat' : 'list'))
       <div class="chat-root__view">
         <ChatView
           v-if="openChat"
+          :key="openChat.id"
           :chat="openChat"
+          :is-loading-messages="loadingLists?.includes('messages') ?? false"
           @close-chat="emit('closeChat')"
           @set-chat-muted="emit('setChatMuted', $event)"
           @join-chat="emit('joinChat', $event)"
           @unpin-all-messages="emit('unpinAllMessages', $event)"
+          @open-user="emit('openUser', $event)"
+          @go-to-latest="emit('goToLatest')"
+          @reached-top="emit('reachedTop', $event)"
+          @reached-bottom="emit('reachedBottom', $event)"
         />
         <p v-else class="chat-root__empty">Выберите чат</p>
       </div>
@@ -50,6 +56,7 @@ const pane = computed(() => (props.openChat ? 'chat' : 'list'))
 .chat-root__layout {
   display: grid;
   grid-template-columns: var(--chat-sidebar-width) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   height: 100%;
 }
 
@@ -61,6 +68,7 @@ const pane = computed(() => (props.openChat ? 'chat' : 'list'))
 
 .chat-root__view {
   display: grid;
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .chat-root__empty {

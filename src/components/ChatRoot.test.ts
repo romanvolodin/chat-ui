@@ -141,6 +141,36 @@ describe('ChatRoot', () => {
       expect(onJoinChat).toHaveBeenCalledWith({ chatId: channelChat.id })
     })
 
+    it('при переходе к другому чату строит диалог заново, а при обновлении того же сохраняет', async () => {
+      const { container, state } = mount({ openChat })
+      const first = container.querySelector('.chat-view')
+      state.openChat = { ...openChat, isMuted: true }
+      await nextTick()
+      expect(container.querySelector('.chat-view')).toBe(first)
+      state.openChat = { ...openChat, id: 'other-chat' }
+      await nextTick()
+      expect(container.querySelector('.chat-view')).not.toBe(first)
+    })
+
+    it('показывает индикатор, пока движок грузит сообщения', () => {
+      const chat: OpenChat = { ...openChat, hasMoreBefore: true }
+      const { container } = mount({ openChat: chat, loadingLists: ['messages'] })
+      expect(container.querySelector('.chat-message-list__loading--top')).not.toBeNull()
+    })
+
+    it('индикатор не показывается, если грузится другой список', () => {
+      const chat: OpenChat = { ...openChat, hasMoreBefore: true }
+      const { container } = mount({ openChat: chat, loadingLists: ['chats'] })
+      expect(container.querySelector('.chat-message-list__loading--top')).toBeNull()
+    })
+
+    it('сообщает движку, что внизу загруженного нужна следующая порция', () => {
+      const onReachedBottom = vi.fn()
+      const chat: OpenChat = { ...openChat, hasMoreAfter: true }
+      mount({ openChat: chat, onReachedBottom })
+      expect(onReachedBottom).toHaveBeenCalledWith({ list: 'messages' })
+    })
+
     it('отмечает открытый чат в списке', () => {
       const { container } = mount({ openChat })
       const selected = container.querySelectorAll('.chat-list-item--selected')

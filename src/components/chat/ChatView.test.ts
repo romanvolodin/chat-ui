@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { channelChat, pinnedChat } from '../../docs/sampleData'
+import { sampleMessages } from '../../docs/sampleMessages'
 import { mountWithChatContext } from '../../test-utils/mountWithChatContext'
 import type { OpenChat } from '../../types'
 import ChatView from './ChatView.vue'
@@ -32,5 +33,72 @@ describe('ChatView', () => {
     mounted = mountWithChatContext(ChatView, { chat: channel, onJoinChat })
     mounted.container.querySelector<HTMLElement>('.chat-footer-action')?.click()
     expect(onJoinChat).toHaveBeenCalledWith({ chatId: channelChat.id })
+  })
+
+  describe('список сообщений', () => {
+    const withMessages = (extra: Partial<OpenChat> = {}): OpenChat => ({
+      ...chat,
+      messages: sampleMessages,
+      ...extra,
+    })
+
+    it('показывает сообщения между шапкой и нижней панелью', () => {
+      const channel: OpenChat = { ...withMessages(), footer: { type: 'join' } }
+      mounted = mountWithChatContext(ChatView, { chat: channel })
+      const view = mounted.container.querySelector('.chat-view')
+      const order = Array.from(view?.children ?? []).map((element) => element.className)
+      expect(order).toEqual([
+        'chat-header',
+        'chat-message-list',
+        expect.stringContaining('chat-footer') as string,
+      ])
+      expect(view?.querySelectorAll('.chat-bubble').length).toBeGreaterThan(0)
+    })
+
+    it('если ниже есть непоказанные сообщения, кнопка «вниз» просит последние', () => {
+      const onGoToLatest = vi.fn()
+      mounted = mountWithChatContext(ChatView, {
+        chat: withMessages({ hasMoreAfter: true }),
+        onGoToLatest,
+      })
+      mounted.container.querySelector<HTMLElement>('.chat-scroll-down')?.click()
+      expect(onGoToLatest).toHaveBeenCalledOnce()
+    })
+
+    it('просит порцию ниже, когда она нужна', () => {
+      const onReachedBottom = vi.fn()
+      mounted = mountWithChatContext(ChatView, {
+        chat: withMessages({ hasMoreAfter: true }),
+        onReachedBottom,
+      })
+      expect(onReachedBottom).toHaveBeenCalledWith({ list: 'messages' })
+    })
+
+    it('показывает индикатор загрузки истории', () => {
+      mounted = mountWithChatContext(ChatView, {
+        chat: withMessages({ hasMoreBefore: true }),
+        isLoadingMessages: true,
+      })
+      expect(mounted.container.querySelector('.chat-message-list__loading--top')).not.toBeNull()
+    })
+
+    it('передаёт наружу открытие пользователя из упоминания', () => {
+      const onOpenUser = vi.fn()
+      const mention: OpenChat = {
+        ...chat,
+        messages: [
+          {
+            type: 'user',
+            id: '1',
+            authorId: 'ivan',
+            sentAt: new Date('2026-11-17T12:00:00Z'),
+            text: [{ text: '@Анна', format: ['mention'], userId: 'anna' }],
+          },
+        ],
+      }
+      mounted = mountWithChatContext(ChatView, { chat: mention, onOpenUser })
+      mounted.container.querySelector<HTMLElement>('.chat-text-mention')?.click()
+      expect(onOpenUser).toHaveBeenCalledWith({ userId: 'anna' })
+    })
   })
 })
