@@ -24,6 +24,13 @@ function mount(props: Record<string, unknown>) {
 }
 
 describe('SystemMessage', () => {
+  it('записывает id сообщения в атрибут', () => {
+    const container = mount({ message })
+    expect(container.querySelector('.chat-system-message')?.getAttribute('data-message-id')).toBe(
+      's1',
+    )
+  })
+
   it('без автора показывает только текст', () => {
     const container = mount({ message: { ...message, text: [{ text: 'Начало обсуждения' }] } })
     expect(container.querySelector('.chat-system-message__author')).toBeNull()

@@ -372,4 +372,168 @@ describe('MessageList', () => {
       expect(container.querySelector('.chat-message-list__loading')).toBeNull()
     })
   })
+
+  describe('прочитано до', () => {
+    interface Box {
+      top: number
+      bottom: number
+    }
+    // Область прокрутки занимает 0..500px, не названные сообщения находятся далеко за её нижним краем
+    let boxes: Record<string, Box>
+    const hidden: Box = { top: 10_000, bottom: 10_100 }
+
+    const messages = ['m1', 'm2', 'm3', 'm4'].map((id, index) =>
+      userMessage(id, 'ivan', 10 - index),
+    )
+    const unreadChat = (extra: Partial<OpenChat> = {}) =>
+      chatWith({ messages, firstUnreadMessageId: 'm2', ...extra })
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+      boxes = {}
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+        this: Element,
+      ) {
+        if (this.classList.contains('chat-message-list__scroller')) {
+          return { top: 0, bottom: 500 } as DOMRect
+        }
+        const id = this.getAttribute('data-message-id')
+        return (id ? (boxes[id] ?? hidden) : hidden) as DOMRect
+      })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    const settle = () => vi.advanceTimersByTimeAsync(200)
+
+    it('сообщает о последнем увиденном из непрочитанных', async () => {
+      boxes = { m2: { top: 100, bottom: 200 }, m3: { top: 220, bottom: 320 } }
+      const onReadUntil = vi.fn()
+      mount(unreadChat(), { onReadUntil })
+      await settle()
+      expect(onReadUntil).toHaveBeenCalledExactlyOnceWith({ messageId: 'm3' })
+    })
+
+    it('молчит, если непрочитанных нет', async () => {
+      boxes = { m2: { top: 100, bottom: 200 } }
+      const onReadUntil = vi.fn()
+      mount(unreadChat({ firstUnreadMessageId: undefined }), { onReadUntil })
+      await settle()
+      expect(onReadUntil).not.toHaveBeenCalled()
+    })
+
+    it('молчит, пока видны только уже прочитанные', async () => {
+      boxes = { m1: { top: -100, bottom: 100 } }
+      const onReadUntil = vi.fn()
+      mount(unreadChat(), { onReadUntil })
+      await settle()
+      expect(onReadUntil).not.toHaveBeenCalled()
+    })
+
+    it('молчит, если первого непрочитанного нет среди загруженных', async () => {
+      boxes = { m2: { top: 100, bottom: 200 } }
+      const onReadUntil = vi.fn()
+      mount(unreadChat({ firstUnreadMessageId: 'm0' }), { onReadUntil })
+      await settle()
+      expect(onReadUntil).not.toHaveBeenCalled()
+    })
+
+    it('высокое сообщение считается увиденным, когда видна его верхняя часть', async () => {
+      boxes = {
+        m2: { top: 100, bottom: 200 },
+        m3: { top: 300, bottom: 900 },
+        m4: { top: 470, bottom: 570 },
+      }
+      const onReadUntil = vi.fn()
+      mount(unreadChat(), { onReadUntil })
+      await settle()
+      expect(onReadUntil).toHaveBeenCalledExactlyOnceWith({ messageId: 'm3' })
+    })
+
+    it('не повторяет один и тот же рубеж, а при движении вперёд сообщает новый', async () => {
+      boxes = { m2: { top: 100, bottom: 200 }, m3: { top: 220, bottom: 320 } }
+      const onReadUntil = vi.fn()
+      const { scroller } = mount(unreadChat(), { onReadUntil })
+      await settle()
+      scroller.dispatchEvent(new Event('scroll'))
+      await settle()
+      expect(onReadUntil).toHaveBeenCalledOnce()
+
+      boxes = { ...boxes, m4: { top: 340, bottom: 440 } }
+      scroller.dispatchEvent(new Event('scroll'))
+      await settle()
+      expect(onReadUntil).toHaveBeenCalledTimes(2)
+      expect(onReadUntil).toHaveBeenLastCalledWith({ messageId: 'm4' })
+    })
+
+    it('при быстрой прокрутке сообщает один раз и о том, докуда долистали', async () => {
+      boxes = { m2: { top: 100, bottom: 200 } }
+      const onReadUntil = vi.fn()
+      const { scroller } = mount(unreadChat(), { onReadUntil })
+      await vi.advanceTimersByTimeAsync(100)
+      boxes = { m2: { top: 100, bottom: 200 }, m3: { top: 220, bottom: 320 } }
+      scroller.dispatchEvent(new Event('scroll'))
+      await vi.advanceTimersByTimeAsync(100)
+      expect(onReadUntil).toHaveBeenCalledExactlyOnceWith({ messageId: 'm3' })
+    })
+
+    it('сообщает о новом сообщении, которое появилось в области просмотра', async () => {
+      boxes = { m2: { top: 100, bottom: 200 }, m3: { top: 220, bottom: 320 } }
+      const onReadUntil = vi.fn()
+      const { props } = mount(unreadChat({ messages: messages.slice(0, 3) }), { onReadUntil })
+      await settle()
+      expect(onReadUntil).toHaveBeenLastCalledWith({ messageId: 'm3' })
+
+      boxes = { ...boxes, m4: { top: 340, bottom: 440 } }
+      props.chat = unreadChat()
+      await nextTick()
+      await settle()
+      expect(onReadUntil).toHaveBeenLastCalledWith({ messageId: 'm4' })
+    })
+
+    it('не сообщает, пока вкладка скрыта, а когда её показали, сообщает', async () => {
+      boxes = { m2: { top: 100, bottom: 200 } }
+      const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+      const onReadUntil = vi.fn()
+      mount(unreadChat(), { onReadUntil })
+      await settle()
+      expect(onReadUntil).not.toHaveBeenCalled()
+
+      visibility.mockReturnValue('visible')
+      document.dispatchEvent(new Event('visibilitychange'))
+      await settle()
+      expect(onReadUntil).toHaveBeenCalledExactlyOnceWith({ messageId: 'm2' })
+    })
+
+    it('после размонтирования ничего не сообщает', async () => {
+      boxes = { m2: { top: 100, bottom: 200 } }
+      const onReadUntil = vi.fn()
+      mount(unreadChat(), { onReadUntil })
+      mounted?.unmount()
+      mounted = undefined
+      await settle()
+      expect(onReadUntil).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('метка непрочитанных', () => {
+    const messages = [userMessage('m1', 'ivan', 5), userMessage('m2', 'ivan', 4)]
+
+    it('остаётся на месте, когда движок убрал первое непрочитанное', async () => {
+      const { container, props } = mount(chatWith({ messages, firstUnreadMessageId: 'm2' }))
+      expect(container.querySelector('.chat-unread-divider')).not.toBeNull()
+      props.chat = chatWith({ messages, firstUnreadMessageId: undefined })
+      await nextTick()
+      expect(container.querySelector('.chat-unread-divider')).not.toBeNull()
+    })
+
+    it('не появляется, если при открытии непрочитанных не было', async () => {
+      const { container, props } = mount(chatWith({ messages }))
+      props.chat = chatWith({ messages, firstUnreadMessageId: 'm2' })
+      await nextTick()
+      expect(container.querySelector('.chat-unread-divider')).toBeNull()
+    })
+  })
 })

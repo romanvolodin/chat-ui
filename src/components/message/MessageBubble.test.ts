@@ -30,6 +30,10 @@ function mount(
 }
 
 describe('MessageBubble', () => {
+  it('записывает id сообщения в атрибут: по нему список находит сообщение в DOM', () => {
+    expect(mount().getAttribute('data-message-id')).toBe('m1')
+  })
+
   it('показывает текст сообщения с форматированием', () => {
     const bubble = mount()
     expect(bubble.querySelector('.chat-message-text')?.textContent).toContain('Привет, мир')

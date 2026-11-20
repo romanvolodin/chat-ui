@@ -1,7 +1,15 @@
 <script setup lang="ts">
-import { computed, onBeforeUpdate, onMounted, onUpdated, ref, useTemplateRef } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  onBeforeUpdate,
+  onMounted,
+  onUpdated,
+  ref,
+  useTemplateRef,
+} from 'vue'
 import { useChatContext } from '../../composables/chatContext'
-import type { ListId, OpenChat, UserId } from '../../types'
+import type { ListId, MessageId, OpenChat, UserId } from '../../types'
 import { buildFeed } from '../../utils/messageFeed'
 import BaseSpinner from '../base/BaseSpinner.vue'
 import DateDivider from './DateDivider.vue'
@@ -24,6 +32,7 @@ const emit = defineEmits<{
   goToLatest: []
   reachedTop: [payload: { list: ListId }]
   reachedBottom: [payload: { list: ListId }]
+  readUntil: [payload: { messageId: MessageId }]
 }>()
 
 const { currentUserId, timeZone } = useChatContext()
@@ -32,15 +41,23 @@ const { currentUserId, timeZone } = useChatContext()
 const BOTTOM_THRESHOLD = 40
 /** За сколько px до края просим следующую порцию истории: чтобы она успела прийти до самого края. */
 const EDGE_THRESHOLD = 200
+/** Как часто сообщаем о прочитанном при прокрутке, мс. */
+const READ_CHECK_DELAY = 200
+/** Сколько px сообщения должно быть видно, чтобы оно считалось увиденным (если оно не выше этого). */
+const SEEN_MIN_VISIBLE = 40
 
 const scroller = useTemplateRef<HTMLElement>('scroller')
 const isAtBottom = ref(true)
+
+// Метка «Непрочитанные сообщения» остаётся там, где была при открытии чата. Когда пользователь
+// дочитывает, движок убирает или сдвигает `firstUnreadMessageId`, и метка не должна прыгать из-под глаз.
+const unreadMessageIdOnOpen = props.chat.firstUnreadMessageId
 
 const feed = computed(() =>
   buildFeed(props.chat.messages, {
     currentUserId: currentUserId.value,
     timeZone: timeZone.value,
-    firstUnreadMessageId: props.chat.firstUnreadMessageId,
+    firstUnreadMessageId: unreadMessageIdOnOpen,
   }),
 )
 
@@ -83,9 +100,67 @@ function requestMoreIfNearEdge(force = false) {
   wasNearBottom = isNearBottom
 }
 
+let readCheckTimer: ReturnType<typeof setTimeout> | undefined
+let lastReportedId: MessageId | undefined
+
+/** Самое нижнее сообщение, которое пользователь уже видел: всё выше него тоже прочитано. */
+function findLastSeenMessageId(): MessageId | undefined {
+  const element = scroller.value
+  if (!element) return undefined
+  const viewportBottom = element.getBoundingClientRect().bottom
+  const items = element.querySelectorAll<HTMLElement>('[data-message-id]')
+  for (let index = items.length - 1; index >= 0; index--) {
+    const item = items[index]
+    if (!item) continue
+    const rect = item.getBoundingClientRect()
+    // Либо сообщение видно целиком (или уже прокручено), либо видна его верхняя часть
+    if (rect.bottom <= viewportBottom || rect.top <= viewportBottom - SEEN_MIN_VISIBLE) {
+      return item.dataset.messageId
+    }
+  }
+  return undefined
+}
+
+/**
+ * Сообщает движку «прочитано до X», когда прокрутка дошла до непрочитанных сообщений. Работает только
+ * если первое непрочитанное есть среди загруженных сообщений, иначе непонятно, выше оно или ниже.
+ * Один и тот же рубеж дважды не отправляется, только движение вперёд.
+ */
+function reportRead() {
+  if (document.visibilityState !== 'visible') return
+  const firstUnreadId = props.chat.firstUnreadMessageId
+  if (firstUnreadId === undefined) return
+
+  const messages = props.chat.messages
+  const firstUnreadIndex = messages.findIndex((message) => message.id === firstUnreadId)
+  const seenId = findLastSeenMessageId()
+  if (firstUnreadIndex < 0 || seenId === undefined) return
+
+  const seenIndex = messages.findIndex((message) => message.id === seenId)
+  const reportedIndex = messages.findIndex((message) => message.id === lastReportedId)
+  if (seenIndex < firstUnreadIndex || seenIndex <= reportedIndex) return
+
+  lastReportedId = seenId
+  emit('readUntil', { messageId: seenId })
+}
+
+// Не чаще раза в READ_CHECK_DELAY: при быстрой прокрутке сообщаем о том, докуда долистали
+function scheduleReadCheck() {
+  if (readCheckTimer !== undefined) return
+  readCheckTimer = setTimeout(() => {
+    readCheckTimer = undefined
+    reportRead()
+  }, READ_CHECK_DELAY)
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible') scheduleReadCheck()
+}
+
 function onScroll() {
   updateIsAtBottom()
   requestMoreIfNearEdge()
+  scheduleReadCheck()
 }
 
 function scrollToBottom(behavior: ScrollBehavior = 'auto') {
@@ -125,6 +200,13 @@ onMounted(() => {
   rememberRenderedIds()
   scrollToInitialPosition()
   requestMoreIfNearEdge()
+  scheduleReadCheck()
+  document.addEventListener('visibilitychange', onVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+  clearTimeout(readCheckTimer)
 })
 
 onBeforeUpdate(() => {
@@ -158,6 +240,7 @@ onUpdated(() => {
   before = undefined
   rememberRenderedIds()
   requestMoreIfNearEdge(isNewData)
+  if (isNewData) scheduleReadCheck()
 })
 </script>
 

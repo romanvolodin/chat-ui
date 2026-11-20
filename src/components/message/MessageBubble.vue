@@ -29,6 +29,7 @@ const meta = computed(() => ({
 <template>
   <div
     class="chat-bubble"
+    :data-message-id="message.id"
     :class="[
       isOutgoing ? 'chat-bubble--outgoing' : 'chat-bubble--incoming',
       {

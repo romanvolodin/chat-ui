@@ -20,7 +20,7 @@ const authorName = computed(() =>
 </script>
 
 <template>
-  <div class="chat-system-message">
+  <div class="chat-system-message" :data-message-id="message.id">
     <BasePill>
       <button
         v-if="message.authorId !== undefined"
