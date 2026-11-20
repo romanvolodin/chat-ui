@@ -260,4 +260,116 @@ describe('MessageList', () => {
     container.querySelector<HTMLElement>('.chat-text-mention')?.click()
     expect(onOpenUser).toHaveBeenCalledWith({ userId: 'anna' })
   })
+
+  describe('подгрузка истории', () => {
+    const scrollTo = (scroller: HTMLElement, top: number) => {
+      scroller.scrollTop = top
+      scroller.dispatchEvent(new Event('scroll'))
+    }
+    const one = [userMessage('1', 'ivan', 5)]
+
+    it('подойдя к верху, просит предыдущую порцию', () => {
+      const onReachedTop = vi.fn()
+      const { scroller } = mount(chatWith({ messages: one, hasMoreBefore: true }), { onReachedTop })
+      expect(onReachedTop).not.toHaveBeenCalled()
+      scrollTo(scroller, 100)
+      expect(onReachedTop).toHaveBeenCalledExactlyOnceWith({ list: 'messages' })
+    })
+
+    it('пока прокрутка остаётся у верха, повторно не просит', () => {
+      const onReachedTop = vi.fn()
+      const { scroller } = mount(chatWith({ messages: one, hasMoreBefore: true }), { onReachedTop })
+      scrollTo(scroller, 150)
+      scrollTo(scroller, 80)
+      scrollTo(scroller, 0)
+      expect(onReachedTop).toHaveBeenCalledOnce()
+    })
+
+    it('отойдя от верха и вернувшись, просит снова', () => {
+      const onReachedTop = vi.fn()
+      const { scroller } = mount(chatWith({ messages: one, hasMoreBefore: true }), { onReachedTop })
+      scrollTo(scroller, 100)
+      scrollTo(scroller, 300)
+      scrollTo(scroller, 100)
+      expect(onReachedTop).toHaveBeenCalledTimes(2)
+    })
+
+    it('если выше ничего нет, не просит', () => {
+      const onReachedTop = vi.fn()
+      const { scroller } = mount(chatWith({ messages: one }), { onReachedTop })
+      scrollTo(scroller, 0)
+      expect(onReachedTop).not.toHaveBeenCalled()
+    })
+
+    it('пока движок грузит, не просит', () => {
+      const onReachedTop = vi.fn()
+      const { scroller } = mount(chatWith({ messages: one, hasMoreBefore: true }), {
+        isLoading: true,
+        onReachedTop,
+      })
+      scrollTo(scroller, 0)
+      expect(onReachedTop).not.toHaveBeenCalled()
+    })
+
+    it('если порция пришла, а верх всё ещё рядом, просит следующую', async () => {
+      const onReachedTop = vi.fn()
+      const { scroller, props } = mount(chatWith({ messages: one, hasMoreBefore: true }), {
+        onReachedTop,
+      })
+      scrollTo(scroller, 0)
+      expect(onReachedTop).toHaveBeenCalledOnce()
+      // Окно сообщений заменили целиком: прокрутка не сдвигается и остаётся у верха
+      props.chat = chatWith({ messages: [userMessage('9', 'ivan', 1)], hasMoreBefore: true })
+      await nextTick()
+      expect(onReachedTop).toHaveBeenCalledTimes(2)
+    })
+
+    it('если порция сдвинула верх далеко, следующую не просит', async () => {
+      const onReachedTop = vi.fn()
+      const { scroller, props } = mount(chatWith({ messages: one, hasMoreBefore: true }), {
+        onReachedTop,
+      })
+      scrollTo(scroller, 0)
+      props.chat = chatWith({
+        messages: [userMessage('0', 'ivan', 20), ...one],
+        hasMoreBefore: true,
+      })
+      await nextTick()
+      expect(onReachedTop).toHaveBeenCalledOnce()
+    })
+
+    it('у низа просит следующую порцию, если ниже что-то есть', () => {
+      const onReachedBottom = vi.fn()
+      // Открытие у низа загруженного окна уже «у края»
+      mount(chatWith({ messages: one, hasMoreAfter: true }), { onReachedBottom })
+      expect(onReachedBottom).toHaveBeenCalledExactlyOnceWith({ list: 'messages' })
+    })
+
+    it('если ниже ничего нет, не просит', () => {
+      const onReachedBottom = vi.fn()
+      mount(chatWith({ messages: one }), { onReachedBottom })
+      expect(onReachedBottom).not.toHaveBeenCalled()
+    })
+
+    it('индикатор сверху показывается, пока грузят и выше есть история', () => {
+      const { container } = mount(chatWith({ messages: one, hasMoreBefore: true }), {
+        isLoading: true,
+      })
+      expect(container.querySelector('.chat-message-list__loading--top')).not.toBeNull()
+      expect(container.querySelector('.chat-message-list__loading--bottom')).toBeNull()
+    })
+
+    it('индикатор снизу показывается, пока грузят и ниже есть история', () => {
+      const { container } = mount(chatWith({ messages: one, hasMoreAfter: true }), {
+        isLoading: true,
+      })
+      expect(container.querySelector('.chat-message-list__loading--bottom')).not.toBeNull()
+      expect(container.querySelector('.chat-message-list__loading--top')).toBeNull()
+    })
+
+    it('без загрузки индикаторов нет', () => {
+      const { container } = mount(chatWith({ messages: one, hasMoreBefore: true }))
+      expect(container.querySelector('.chat-message-list__loading')).toBeNull()
+    })
+  })
 })

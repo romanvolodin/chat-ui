@@ -1,25 +1,37 @@
 <script setup lang="ts">
 import { computed, onBeforeUpdate, onMounted, onUpdated, ref, useTemplateRef } from 'vue'
 import { useChatContext } from '../../composables/chatContext'
-import type { OpenChat, UserId } from '../../types'
+import type { ListId, OpenChat, UserId } from '../../types'
 import { buildFeed } from '../../utils/messageFeed'
+import BaseSpinner from '../base/BaseSpinner.vue'
 import DateDivider from './DateDivider.vue'
 import MessageGroup from './MessageGroup.vue'
 import ScrollDownButton from './ScrollDownButton.vue'
 import SystemMessage from './SystemMessage.vue'
 import UnreadDivider from './UnreadDivider.vue'
 
-const props = defineProps<{ chat: OpenChat }>()
+const props = withDefaults(
+  defineProps<{
+    chat: OpenChat
+    /** Движок подгружает сообщения: пока так, новых порций не просим, а у края показываем индикатор. */
+    isLoading?: boolean
+  }>(),
+  { isLoading: false },
+)
 
 const emit = defineEmits<{
   openUser: [payload: { userId: UserId }]
   goToLatest: []
+  reachedTop: [payload: { list: ListId }]
+  reachedBottom: [payload: { list: ListId }]
 }>()
 
 const { currentUserId, timeZone } = useChatContext()
 
 /** Насколько близко к низу прокрутка всё ещё считается «внизу», px. */
 const BOTTOM_THRESHOLD = 40
+/** За сколько px до края просим следующую порцию истории: чтобы она успела прийти до самого края. */
+const EDGE_THRESHOLD = 200
 
 const scroller = useTemplateRef<HTMLElement>('scroller')
 const isAtBottom = ref(true)
@@ -44,6 +56,36 @@ function distanceToBottom(element: HTMLElement): number {
 
 function updateIsAtBottom() {
   if (scroller.value) isAtBottom.value = distanceToBottom(scroller.value) <= BOTTOM_THRESHOLD
+}
+
+let wasNearTop = false
+let wasNearBottom = false
+
+/**
+ * Просит у движка следующую порцию, когда прокрутка подошла к краю загруженного. Запрос уходит один раз
+ * при подходе к краю, а повторяется, только если пришла порция (`force`), а край всё ещё рядом.
+ */
+function requestMoreIfNearEdge(force = false) {
+  const element = scroller.value
+  if (!element) return
+  const isNearTop = element.scrollTop <= EDGE_THRESHOLD
+  const isNearBottom = distanceToBottom(element) <= EDGE_THRESHOLD
+
+  if (!props.isLoading) {
+    if (isNearTop && (force || !wasNearTop) && props.chat.hasMoreBefore) {
+      emit('reachedTop', { list: 'messages' })
+    }
+    if (isNearBottom && (force || !wasNearBottom) && props.chat.hasMoreAfter) {
+      emit('reachedBottom', { list: 'messages' })
+    }
+  }
+  wasNearTop = isNearTop
+  wasNearBottom = isNearBottom
+}
+
+function onScroll() {
+  updateIsAtBottom()
+  requestMoreIfNearEdge()
 }
 
 function scrollToBottom(behavior: ScrollBehavior = 'auto') {
@@ -82,6 +124,7 @@ function rememberRenderedIds() {
 onMounted(() => {
   rememberRenderedIds()
   scrollToInitialPosition()
+  requestMoreIfNearEdge()
 })
 
 onBeforeUpdate(() => {
@@ -111,14 +154,16 @@ onUpdated(() => {
     updateIsAtBottom()
   }
 
+  const isNewData = firstId !== renderedFirstId || lastId !== renderedLastId
   before = undefined
   rememberRenderedIds()
+  requestMoreIfNearEdge(isNewData)
 })
 </script>
 
 <template>
   <div class="chat-message-list">
-    <div ref="scroller" class="chat-message-list__scroller" @scroll.passive="updateIsAtBottom">
+    <div ref="scroller" class="chat-message-list__scroller" @scroll.passive="onScroll">
       <div class="chat-message-list__feed">
         <template v-for="item in feed" :key="item.key">
           <DateDivider v-if="item.kind === 'date'" :date="item.date" />
@@ -137,6 +182,19 @@ onUpdated(() => {
           />
         </template>
       </div>
+    </div>
+    <!-- Индикаторы поверх списка, а не в нём: появившись, они не сдвинут сообщения -->
+    <div
+      v-if="isLoading && chat.hasMoreBefore"
+      class="chat-message-list__loading chat-message-list__loading--top"
+    >
+      <BaseSpinner />
+    </div>
+    <div
+      v-if="isLoading && chat.hasMoreAfter"
+      class="chat-message-list__loading chat-message-list__loading--bottom"
+    >
+      <BaseSpinner />
     </div>
     <ScrollDownButton
       v-if="isScrollDownVisible"
@@ -168,6 +226,24 @@ onUpdated(() => {
   margin: 0 auto;
   padding: 10px;
   max-width: var(--chat-dialog-max-width);
+}
+
+.chat-message-list__loading {
+  display: flex;
+  position: absolute;
+  left: 0;
+  justify-content: center;
+  pointer-events: none;
+  width: 100%;
+  color: var(--chat-text-muted);
+}
+
+.chat-message-list__loading--top {
+  top: 8px;
+}
+
+.chat-message-list__loading--bottom {
+  bottom: 8px;
 }
 
 .chat-message-list__down {
