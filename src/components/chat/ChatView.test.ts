@@ -82,6 +82,29 @@ describe('ChatView', () => {
       expect(mounted.container.querySelector('.chat-message-list__loading--top')).not.toBeNull()
     })
 
+    it('сообщает движку, до какого сообщения дочитали', async () => {
+      vi.useFakeTimers()
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+        this: Element,
+      ) {
+        return (
+          this.classList.contains('chat-message-list__scroller')
+            ? { top: 0, bottom: 500 }
+            : { top: 100, bottom: 200 }
+        ) as DOMRect
+      })
+      const onReadUntil = vi.fn()
+      mounted = mountWithChatContext(ChatView, {
+        chat: withMessages({ firstUnreadMessageId: 'm190' }),
+        onReadUntil,
+      })
+      await vi.advanceTimersByTimeAsync(200)
+      // все сообщения «видны», значит дочитано до последнего
+      expect(onReadUntil).toHaveBeenCalledWith({ messageId: 'm200' })
+      vi.useRealTimers()
+      vi.restoreAllMocks()
+    })
+
     it('передаёт наружу открытие пользователя из упоминания', () => {
       const onOpenUser = vi.fn()
       const mention: OpenChat = {

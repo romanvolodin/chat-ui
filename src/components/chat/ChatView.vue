@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ChatId, ListId, OpenChat, UserId } from '../../types'
+import type { ChatId, ListId, MessageId, OpenChat, UserId } from '../../types'
 import MessageList from '../messages/MessageList.vue'
 import ChatFooter from './ChatFooter.vue'
 import ChatHeader from './ChatHeader.vue'
@@ -22,6 +22,7 @@ const emit = defineEmits<{
   goToLatest: []
   reachedTop: [payload: { list: ListId }]
   reachedBottom: [payload: { list: ListId }]
+  readUntil: [payload: { messageId: MessageId }]
 }>()
 </script>
 
@@ -35,6 +36,7 @@ const emit = defineEmits<{
       @go-to-latest="emit('goToLatest')"
       @reached-top="emit('reachedTop', $event)"
       @reached-bottom="emit('reachedBottom', $event)"
+      @read-until="emit('readUntil', $event)"
     />
     <ChatFooter
       :chat="chat"

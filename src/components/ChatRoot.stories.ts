@@ -17,6 +17,8 @@ function openChatOf(chatId: ChatId): OpenChat | undefined {
         ...chat,
         footer: chat.type === 'channel' ? { type: 'mute' } : { type: 'input' },
         messages: sampleMessages,
+        firstUnreadMessageId: 'm190',
+        unreadCount: 11,
       }
     : undefined
 }
@@ -70,6 +72,20 @@ export const СИмитациейДвижка: Story = {
       function onSelectChat(payload: { chatId: ChatId }) {
         openChat.value = openChatOf(payload.chatId)
       }
+      // Движок помечает прочитанное: следующее непрочитанное это первое чужое сообщение после рубежа
+      function onReadUntil(payload: { messageId: string }) {
+        const current = openChat.value
+        if (!current) return
+        const index = current.messages.findIndex((message) => message.id === payload.messageId)
+        const unread = current.messages
+          .slice(index + 1)
+          .filter((message) => message.type === 'user' && message.authorId !== 'me')
+        openChat.value = {
+          ...current,
+          firstUnreadMessageId: unread[0]?.id,
+          unreadCount: unread.length,
+        }
+      }
       function onSetChatMuted(payload: { isMuted: boolean }) {
         if (openChat.value) openChat.value = { ...openChat.value, isMuted: payload.isMuted }
       }
@@ -79,12 +95,13 @@ export const СИмитациейДвижка: Story = {
         openChat,
         onSelectChat,
         onSetChatMuted,
+        onReadUntil,
         themeStyle: { '--chat-font-family': fontFamilies[String(globals.font)] },
       }
     },
     template: `
       <div :style="frameStyle">
-        <ChatRoot v-bind="args" :open-chat="openChat" :style="themeStyle" @select-chat="onSelectChat" @close-chat="openChat = undefined" @set-chat-muted="onSetChatMuted" />
+        <ChatRoot v-bind="args" :open-chat="openChat" :style="themeStyle" @select-chat="onSelectChat" @close-chat="openChat = undefined" @set-chat-muted="onSetChatMuted" @read-until="onReadUntil" />
       </div>`,
   }),
 }

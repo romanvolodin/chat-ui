@@ -45,6 +45,7 @@ const pane = computed(() => (props.openChat ? 'chat' : 'list'))
           @go-to-latest="emit('goToLatest')"
           @reached-top="emit('reachedTop', $event)"
           @reached-bottom="emit('reachedBottom', $event)"
+          @read-until="emit('readUntil', $event)"
         />
         <p v-else class="chat-root__empty">Выберите чат</p>
       </div>

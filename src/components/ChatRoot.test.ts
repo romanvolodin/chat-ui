@@ -8,6 +8,7 @@ import {
   sampleTimeZone,
   sampleUsers,
 } from '../docs/sampleData'
+import { sampleMessages } from '../docs/sampleMessages'
 import type { OpenChat } from '../types'
 import ChatRoot from './ChatRoot.vue'
 
@@ -169,6 +170,29 @@ describe('ChatRoot', () => {
       const chat: OpenChat = { ...openChat, hasMoreAfter: true }
       mount({ openChat: chat, onReachedBottom })
       expect(onReachedBottom).toHaveBeenCalledWith({ list: 'messages' })
+    })
+
+    it('сообщает движку, до какого сообщения дочитали', async () => {
+      vi.useFakeTimers()
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+        this: Element,
+      ) {
+        return (
+          this.classList.contains('chat-message-list__scroller')
+            ? { top: 0, bottom: 500 }
+            : { top: 100, bottom: 200 }
+        ) as DOMRect
+      })
+      const onReadUntil = vi.fn()
+      mount({
+        openChat: { ...openChat, messages: sampleMessages, firstUnreadMessageId: 'm190' },
+        onReadUntil,
+      })
+      await vi.advanceTimersByTimeAsync(200)
+      // все сообщения «видны», значит дочитано до последнего
+      expect(onReadUntil).toHaveBeenCalledWith({ messageId: 'm200' })
+      vi.useRealTimers()
+      vi.restoreAllMocks()
     })
 
     it('отмечает открытый чат в списке', () => {
