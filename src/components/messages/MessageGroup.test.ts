@@ -119,4 +119,19 @@ describe('MessageGroup', () => {
     container.querySelector<HTMLElement>('.chat-text-mention')?.click()
     expect(onOpenUser).toHaveBeenCalledWith({ userId: 'anna' })
   })
+
+  it('нажатие на цитату в сообщении просит перейти к исходному', () => {
+    const onGoToMessage = vi.fn()
+    const container = mount({
+      messages: [
+        {
+          ...message('1'),
+          replyTo: { messageId: 'm0', excerpt: { authorId: 'anna', text: [{ text: 'Исходное' }] } },
+        },
+      ],
+      onGoToMessage,
+    })
+    container.querySelector<HTMLElement>('.chat-reply-quote')?.click()
+    expect(onGoToMessage).toHaveBeenCalledWith({ messageId: 'm0' })
+  })
 })

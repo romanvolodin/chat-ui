@@ -213,6 +213,26 @@ describe('ChatRoot', () => {
       expect(onChangeDraft).toHaveBeenCalledWith({ text: [{ text: 'При' }] })
     })
 
+    it('сообщает движку о переходе по цитате к исходному сообщению', () => {
+      const onGoToMessage = vi.fn()
+      const chat: OpenChat = {
+        ...openChat,
+        messages: [
+          {
+            type: 'user',
+            id: '2',
+            authorId: 'ivan',
+            sentAt: new Date('2026-11-17T12:00:00Z'),
+            text: [{ text: 'Ответ' }],
+            replyTo: { messageId: '1', excerpt: { authorId: 'anna', text: [{ text: 'Вопрос' }] } },
+          },
+        ],
+      }
+      const { container } = mount({ openChat: chat, onGoToMessage })
+      container.querySelector<HTMLElement>('.chat-reply-quote')?.click()
+      expect(onGoToMessage).toHaveBeenCalledWith({ messageId: '1' })
+    })
+
     it('отмечает открытый чат в списке', () => {
       const { container } = mount({ openChat })
       const selected = container.querySelectorAll('.chat-list-item--selected')

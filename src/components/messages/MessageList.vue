@@ -33,6 +33,7 @@ const emit = defineEmits<{
   reachedTop: [payload: { list: ListId }]
   reachedBottom: [payload: { list: ListId }]
   readUntil: [payload: { messageId: MessageId }]
+  goToMessage: [payload: { messageId: MessageId }]
 }>()
 
 const { currentUserId, timeZone } = useChatContext()
@@ -268,6 +269,7 @@ onUpdated(() => {
             :is-outgoing="item.isOutgoing"
             :show-author="showAuthors && !item.isOutgoing"
             @open-user="emit('openUser', $event)"
+            @go-to-message="emit('goToMessage', $event)"
           />
         </template>
       </div>

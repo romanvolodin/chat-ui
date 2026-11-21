@@ -546,4 +546,21 @@ describe('MessageList', () => {
       expect(container.querySelector('.chat-unread-divider')).toBeNull()
     })
   })
+
+  it('нажатие на цитату передаёт наружу переход к исходному сообщению', () => {
+    const onGoToMessage = vi.fn()
+    const messages: Message[] = [
+      {
+        type: 'user',
+        id: '2',
+        authorId: 'ivan',
+        sentAt: sampleNow,
+        text: [{ text: 'Ответ' }],
+        replyTo: { messageId: '1', excerpt: { authorId: 'anna', text: [{ text: 'Вопрос' }] } },
+      },
+    ]
+    const { container } = mount(chatWith({ messages }), { onGoToMessage })
+    container.querySelector<HTMLElement>('.chat-reply-quote')?.click()
+    expect(onGoToMessage).toHaveBeenCalledWith({ messageId: '1' })
+  })
 })

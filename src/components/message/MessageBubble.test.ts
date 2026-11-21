@@ -125,4 +125,38 @@ describe('MessageBubble', () => {
       expect(mount().querySelector('.chat-bubble__header')).toBeNull()
     })
   })
+
+  describe('цитата ответа', () => {
+    const replyTo = {
+      messageId: 'm0',
+      excerpt: { authorId: 'anna', text: [{ text: 'Исходное сообщение' }] },
+    }
+
+    it('показывается над текстом', () => {
+      const bubble = mount({ message: { ...message, replyTo } })
+      const quote = bubble.querySelector('.chat-reply-quote')
+      expect(quote?.textContent).toContain('Исходное сообщение')
+      expect(quote?.nextElementSibling?.classList.contains('chat-message-text')).toBe(true)
+    })
+
+    it('стоит под шапкой с именем автора', () => {
+      const bubble = mount(
+        { message: { ...message, replyTo } },
+        { header: () => h('span', { class: 'author' }, 'Иван') },
+      )
+      const header = bubble.querySelector('.chat-bubble__header')
+      expect(header?.nextElementSibling?.classList.contains('chat-reply-quote')).toBe(true)
+    })
+
+    it('без ответа цитаты нет', () => {
+      expect(mount().querySelector('.chat-reply-quote')).toBeNull()
+    })
+
+    it('нажатие просит перейти к исходному сообщению', () => {
+      const onGoToMessage = vi.fn()
+      const bubble = mount({ message: { ...message, replyTo }, onGoToMessage })
+      bubble.querySelector<HTMLElement>('.chat-reply-quote')?.click()
+      expect(onGoToMessage).toHaveBeenCalledExactlyOnceWith({ messageId: 'm0' })
+    })
+  })
 })

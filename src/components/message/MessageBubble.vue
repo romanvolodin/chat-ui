@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { UserId, UserMessage } from '../../types'
+import type { MessageId, UserId, UserMessage } from '../../types'
 import MessageMeta from './MessageMeta.vue'
+import MessageReplyQuote from './MessageReplyQuote.vue'
 import MessageText from './MessageText.vue'
 
 const props = withDefaults(
@@ -15,7 +16,10 @@ const props = withDefaults(
   { isOutgoing: false, isFirstInGroup: true, isLastInGroup: true },
 )
 
-const emit = defineEmits<{ openUser: [payload: { userId: UserId }] }>()
+const emit = defineEmits<{
+  openUser: [payload: { userId: UserId }]
+  goToMessage: [payload: { messageId: MessageId }]
+}>()
 
 const meta = computed(() => ({
   sentAt: props.message.sentAt,
@@ -39,6 +43,11 @@ const meta = computed(() => ({
     ]"
   >
     <div v-if="$slots.header" class="chat-bubble__header"><slot name="header" /></div>
+    <MessageReplyQuote
+      v-if="message.replyTo"
+      :reply-to="message.replyTo"
+      @go-to-message="emit('goToMessage', $event)"
+    />
     <MessageText
       v-if="message.text?.length"
       :text="message.text"
