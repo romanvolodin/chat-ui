@@ -219,6 +219,16 @@ describe('MessageList', () => {
       expect(scroller.scrollTop).toBe(100)
     })
 
+    it('своё новое сообщение прокручивает вниз, даже если читали историю выше', async () => {
+      const { scroller, props } = mount(chatWith({ messages: [userMessage('1', 'ivan', 5)] }))
+      await scrollTo(scroller, 100)
+      props.chat = chatWith({
+        messages: [userMessage('1', 'ivan', 5), userMessage('2', 'me', 0)],
+      })
+      await nextTick()
+      expect(scroller.scrollTop).toBe(bottomOf(scroller))
+    })
+
     it('история, добавленная сверху, сохраняет место, где читают', async () => {
       const { scroller, props } = mount(chatWith({ messages: [userMessage('5', 'ivan', 5)] }))
       await scrollTo(scroller, 100)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ChatId, ListId, MessageId, OpenChat, UserId } from '../../types'
+import type { ChatEvents, ChatId, ListId, MessageId, OpenChat, UserId } from '../../types'
 import MessageList from '../messages/MessageList.vue'
 import ChatFooter from './ChatFooter.vue'
 import ChatHeader from './ChatHeader.vue'
@@ -23,6 +23,9 @@ const emit = defineEmits<{
   reachedTop: [payload: { list: ListId }]
   reachedBottom: [payload: { list: ListId }]
   readUntil: [payload: { messageId: MessageId }]
+  changeDraft: ChatEvents['changeDraft']
+  sendMessage: ChatEvents['sendMessage']
+  editMessage: ChatEvents['editMessage']
 }>()
 </script>
 
@@ -43,6 +46,9 @@ const emit = defineEmits<{
       @set-chat-muted="emit('setChatMuted', $event)"
       @join-chat="emit('joinChat', $event)"
       @unpin-all-messages="emit('unpinAllMessages', $event)"
+      @change-draft="emit('changeDraft', $event)"
+      @send-message="emit('sendMessage', $event)"
+      @edit-message="emit('editMessage', $event)"
     />
   </div>
 </template>

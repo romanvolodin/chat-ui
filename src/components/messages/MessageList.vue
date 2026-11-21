@@ -163,6 +163,11 @@ function onScroll() {
   scheduleReadCheck()
 }
 
+function isOwnLastMessage(): boolean {
+  const last = props.chat.messages[props.chat.messages.length - 1]
+  return last?.type === 'user' && last.authorId === currentUserId.value
+}
+
 function scrollToBottom(behavior: ScrollBehavior = 'auto') {
   scroller.value?.scrollTo({ top: scroller.value.scrollHeight, behavior })
 }
@@ -230,7 +235,8 @@ onUpdated(() => {
     if (isPrepended) {
       // Историю добавили сверху: сдвигаем прокрутку на высоту добавленного, чтобы текст не «уехал»
       element.scrollTop = before.top + (element.scrollHeight - before.height)
-    } else if (isAppended && before.wasAtBottom) {
+    } else if (isAppended && (before.wasAtBottom || isOwnLastMessage())) {
+      // Своё сообщение показываем всегда, даже если читали историю выше
       scrollToBottom()
     }
     updateIsAtBottom()

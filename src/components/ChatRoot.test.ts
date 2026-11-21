@@ -195,6 +195,24 @@ describe('ChatRoot', () => {
       vi.restoreAllMocks()
     })
 
+    it('сообщает движку об отправке сообщения из поля ввода', () => {
+      const onSendMessage = vi.fn()
+      const chat: OpenChat = { ...openChat, draft: [{ text: 'Привет' }] }
+      const { container } = mount({ openChat: chat, onSendMessage })
+      container.querySelector<HTMLElement>('.chat-composer__send')?.click()
+      expect(onSendMessage).toHaveBeenCalledWith({ text: [{ text: 'Привет' }] })
+    })
+
+    it('сообщает движку об изменении черновика', () => {
+      const onChangeDraft = vi.fn()
+      const { container } = mount({ openChat, onChangeDraft })
+      const field = container.querySelector('textarea')
+      if (!field) throw new Error('Нет поля ввода')
+      field.value = 'При'
+      field.dispatchEvent(new Event('input'))
+      expect(onChangeDraft).toHaveBeenCalledWith({ text: [{ text: 'При' }] })
+    })
+
     it('отмечает открытый чат в списке', () => {
       const { container } = mount({ openChat })
       const selected = container.querySelectorAll('.chat-list-item--selected')

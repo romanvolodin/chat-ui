@@ -124,4 +124,35 @@ describe('ChatView', () => {
       expect(onOpenUser).toHaveBeenCalledWith({ userId: 'anna' })
     })
   })
+
+  describe('поле ввода', () => {
+    const typeInto = (container: HTMLElement, value: string) => {
+      const field = container.querySelector('textarea')
+      if (!field) throw new Error('Нет поля ввода')
+      field.value = value
+      field.dispatchEvent(new Event('input'))
+    }
+
+    it('показывает черновик чата', () => {
+      mounted = mountWithChatContext(ChatView, { chat: { ...chat, draft: [{ text: 'Черновик' }] } })
+      expect(mounted.container.querySelector('textarea')?.value).toBe('Черновик')
+    })
+
+    it('передаёт наружу изменение черновика', () => {
+      const onChangeDraft = vi.fn()
+      mounted = mountWithChatContext(ChatView, { chat, onChangeDraft })
+      typeInto(mounted.container, 'При')
+      expect(onChangeDraft).toHaveBeenCalledWith({ text: [{ text: 'При' }] })
+    })
+
+    it('передаёт наружу отправку сообщения', () => {
+      const onSendMessage = vi.fn()
+      mounted = mountWithChatContext(ChatView, {
+        chat: { ...chat, draft: [{ text: 'Привет' }] },
+        onSendMessage,
+      })
+      mounted.container.querySelector<HTMLElement>('.chat-composer__send')?.click()
+      expect(onSendMessage).toHaveBeenCalledWith({ text: [{ text: 'Привет' }] })
+    })
+  })
 })

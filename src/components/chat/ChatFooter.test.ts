@@ -18,8 +18,34 @@ function mount(footer: Footer, extra: Partial<OpenChat> = {}, handlers = {}) {
 }
 
 describe('ChatFooter', () => {
-  it('для поля ввода пока ничего не рисует', () => {
-    expect(mount({ type: 'input' }).querySelector('.chat-footer')).toBeNull()
+  describe('поле ввода', () => {
+    it('рисует поле ввода без панели действий', () => {
+      const container = mount({ type: 'input' })
+      expect(container.querySelector('.chat-composer')).not.toBeNull()
+      expect(container.querySelector('.chat-footer-action')).toBeNull()
+    })
+
+    it('показывает черновик из данных чата', () => {
+      const container = mount({ type: 'input' }, { draft: [{ text: 'Недописанное' }] })
+      expect(container.querySelector('textarea')?.value).toBe('Недописанное')
+    })
+
+    it('сообщает об изменении черновика', () => {
+      const onChangeDraft = vi.fn()
+      const container = mount({ type: 'input' }, {}, { onChangeDraft })
+      const field = container.querySelector('textarea')
+      if (!field) throw new Error('Нет поля ввода')
+      field.value = 'При'
+      field.dispatchEvent(new Event('input'))
+      expect(onChangeDraft).toHaveBeenCalledWith({ text: [{ text: 'При' }] })
+    })
+
+    it('сообщает об отправке', () => {
+      const onSendMessage = vi.fn()
+      const container = mount({ type: 'input' }, { draft: [{ text: 'Привет' }] }, { onSendMessage })
+      container.querySelector<HTMLElement>('.chat-composer__send')?.click()
+      expect(onSendMessage).toHaveBeenCalledWith({ text: [{ text: 'Привет' }] })
+    })
   })
 
   describe('кнопка звука', () => {

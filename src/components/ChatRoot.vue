@@ -46,6 +46,9 @@ const pane = computed(() => (props.openChat ? 'chat' : 'list'))
           @reached-top="emit('reachedTop', $event)"
           @reached-bottom="emit('reachedBottom', $event)"
           @read-until="emit('readUntil', $event)"
+          @change-draft="emit('changeDraft', $event)"
+          @send-message="emit('sendMessage', $event)"
+          @edit-message="emit('editMessage', $event)"
         />
         <p v-else class="chat-root__empty">Выберите чат</p>
       </div>
