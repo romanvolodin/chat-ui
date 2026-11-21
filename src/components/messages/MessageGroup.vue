@@ -5,7 +5,7 @@ import type { MessageId, UserId, UserMessage } from '../../types'
 import { UNKNOWN_USER_NAME } from '../../utils/excerpt'
 import BaseAvatar from '../base/BaseAvatar.vue'
 import { getColorIndex } from '../base/avatarAppearance'
-import MessageBubble from '../message/MessageBubble.vue'
+import MessageItem from '../message/MessageItem.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -49,7 +49,7 @@ function openAuthor() {
       <BaseAvatar :name="author?.name ?? ''" :src="author?.avatar" :size="35" />
     </button>
     <div class="chat-message-group__bubbles">
-      <MessageBubble
+      <MessageItem
         v-for="(message, index) in messages"
         :key="message.id"
         :message="message"
@@ -69,7 +69,7 @@ function openAuthor() {
             {{ name }}
           </button>
         </template>
-      </MessageBubble>
+      </MessageItem>
     </div>
   </div>
 </template>

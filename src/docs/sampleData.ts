@@ -10,6 +10,7 @@ export const sampleUsers: UserDirectory = {
   oleg: { id: 'oleg', name: 'Олег' },
   maria: { id: 'maria', name: 'Мария', lastActiveAt: new Date(sampleNow.getTime() - 25 * 60_000) },
   helper: { id: 'helper', name: 'Помощник', isBot: true },
+  blocked: { id: 'blocked', name: 'Заблокированный', isBlocked: true },
 }
 
 const minutesAgo = (minutes: number) => new Date(sampleNow.getTime() - minutes * 60_000)

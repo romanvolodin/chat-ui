@@ -134,4 +134,13 @@ describe('MessageGroup', () => {
     container.querySelector<HTMLElement>('.chat-reply-quote')?.click()
     expect(onGoToMessage).toHaveBeenCalledWith({ messageId: 'm0' })
   })
+
+  it('сообщения заблокированного автора показывает заглушками', () => {
+    const container = mount({
+      messages: [message('1', 'blocked'), message('2', 'blocked')],
+    })
+    expect(container.querySelectorAll('.chat-hidden-stub')).toHaveLength(2)
+    expect(container.querySelector('.chat-bubble')).toBeNull()
+    expect(container.textContent).not.toContain('Сообщение 1')
+  })
 })
