@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { nextTick, reactive } from 'vue'
 import { channelChat, groupChat, pinnedChat, sampleNow } from '../../docs/sampleData'
 import { mountWithChatContext } from '../../test-utils/mountWithChatContext'
@@ -24,6 +24,7 @@ const BUBBLE_HEIGHT = 300
 const VIEWPORT_HEIGHT = 500
 
 let mounted: ReturnType<typeof mountWithChatContext> | undefined
+let scrollToMock: MockInstance | undefined
 
 beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (
@@ -34,7 +35,7 @@ beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(VIEWPORT_HEIGHT)
   // happy-dom не прокручивает сам: присваиваем scrollTop с ограничением, как делает браузер.
   // Подмена стоит до монтирования, потому что начальная прокрутка происходит при монтировании.
-  vi.spyOn(Element.prototype, 'scrollTo').mockImplementation(function (
+  scrollToMock = vi.spyOn(Element.prototype, 'scrollTo').mockImplementation(function (
     this: Element,
     options?: ScrollToOptions | number,
   ) {
@@ -562,5 +563,115 @@ describe('MessageList', () => {
     const { container } = mount(chatWith({ messages }), { onGoToMessage })
     container.querySelector<HTMLElement>('.chat-reply-quote')?.click()
     expect(onGoToMessage).toHaveBeenCalledWith({ messageId: '1' })
+  })
+
+  describe('переход к сообщению по цитате', () => {
+    const rects = {
+      scroller: { top: 0, height: 500, bottom: 500 },
+      item: { top: 1000, height: 100, bottom: 1100 },
+    }
+    const replyingTo = (targetId: string): Message => ({
+      type: 'user',
+      id: 'q',
+      authorId: 'ivan',
+      sentAt: sampleNow,
+      text: [{ text: 'Ответ' }],
+      replyTo: { messageId: targetId, excerpt: { authorId: 'anna', text: [{ text: 'Исходное' }] } },
+    })
+    const scrollToSpy = () => {
+      if (!scrollToMock) throw new Error('scrollTo не подменён')
+      return scrollToMock
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+        this: Element,
+      ) {
+        return (
+          this.classList.contains('chat-message-list__scroller') ? rects.scroller : rects.item
+        ) as DOMRect
+      })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    const clickQuote = async (container: HTMLElement) => {
+      container.querySelector<HTMLElement>('.chat-reply-quote')?.click()
+      await vi.advanceTimersByTimeAsync(0)
+    }
+    const highlightedIds = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll('.chat-bubble--highlighted')).map((bubble) =>
+        bubble.getAttribute('data-message-id'),
+      )
+
+    it('к загруженному сообщению прокручивает сама, не обращаясь к движку', async () => {
+      const onGoToMessage = vi.fn()
+      const messages = [userMessage('1', 'anna', 9), replyingTo('1')]
+      const { container, scroller } = mount(chatWith({ messages }), { onGoToMessage })
+      const before = scroller.scrollTop
+      await clickQuote(container)
+      expect(onGoToMessage).not.toHaveBeenCalled()
+      // сообщение ниже середины области на 1000 - (500 - 100) / 2 = 800px
+      expect(scrollToSpy()).toHaveBeenLastCalledWith({ top: before + 800, behavior: 'smooth' })
+    })
+
+    it('подсвечивает сообщение и через полторы секунды убирает подсветку', async () => {
+      const messages = [userMessage('1', 'anna', 9), replyingTo('1')]
+      const { container } = mount(chatWith({ messages }))
+      await clickQuote(container)
+      expect(highlightedIds(container)).toEqual(['1'])
+      await vi.advanceTimersByTimeAsync(1500)
+      expect(highlightedIds(container)).toEqual([])
+    })
+
+    it('далёкое сообщение просит у движка, ничего не прокручивая', async () => {
+      const onGoToMessage = vi.fn()
+      const { container } = mount(chatWith({ messages: [replyingTo('far')] }), { onGoToMessage })
+      const callsBefore = scrollToSpy().mock.calls.length
+      await clickQuote(container)
+      expect(onGoToMessage).toHaveBeenCalledExactlyOnceWith({ messageId: 'far' })
+      expect(scrollToSpy().mock.calls).toHaveLength(callsBefore)
+      expect(highlightedIds(container)).toEqual([])
+    })
+
+    it('когда движок подгрузил сообщение, прокручивает к нему и подсвечивает', async () => {
+      const { container, props } = mount(chatWith({ messages: [replyingTo('far')] }), {
+        onGoToMessage: vi.fn(),
+      })
+      await clickQuote(container)
+      props.chat = chatWith({ messages: [userMessage('far', 'anna', 99), replyingTo('far')] })
+      await vi.advanceTimersByTimeAsync(0)
+      expect(scrollToSpy()).toHaveBeenLastCalledWith(expect.objectContaining({ behavior: 'auto' }))
+      expect(highlightedIds(container)).toEqual(['far'])
+    })
+
+    it('если движок так и не подгрузил сообщение, позднее появление его не вызывает перехода', async () => {
+      const { container, props } = mount(chatWith({ messages: [replyingTo('far')] }), {
+        onGoToMessage: vi.fn(),
+      })
+      await clickQuote(container)
+      await vi.advanceTimersByTimeAsync(10_000)
+      const callsBefore = scrollToSpy().mock.calls.length
+      props.chat = chatWith({ messages: [userMessage('far', 'anna', 99), replyingTo('far')] })
+      await vi.advanceTimersByTimeAsync(0)
+      expect(scrollToSpy().mock.calls.length).toBe(callsBefore)
+      expect(highlightedIds(container)).toEqual([])
+    })
+
+    it('повторный переход к тому же сообщению подсвечивает его заново', async () => {
+      const messages = [userMessage('1', 'anna', 9), replyingTo('1')]
+      const { container } = mount(chatWith({ messages }))
+      await clickQuote(container)
+      await vi.advanceTimersByTimeAsync(1000)
+      await clickQuote(container)
+      await vi.advanceTimersByTimeAsync(1000)
+      // от второго перехода прошла секунда, подсветка ещё держится
+      expect(highlightedIds(container)).toEqual(['1'])
+      await vi.advanceTimersByTimeAsync(600)
+      expect(highlightedIds(container)).toEqual([])
+    })
   })
 })

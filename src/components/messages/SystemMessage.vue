@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useChatContext } from '../../composables/chatContext'
+import { useHighlightedMessageId } from '../../composables/messageHighlight'
 import type { SystemMessage, UserId } from '../../types'
 import { UNKNOWN_USER_NAME } from '../../utils/excerpt'
 import BasePill from '../base/BasePill.vue'
@@ -11,6 +12,7 @@ const props = defineProps<{ message: SystemMessage }>()
 const emit = defineEmits<{ openUser: [payload: { userId: UserId }] }>()
 
 const { users } = useChatContext()
+const highlightedId = useHighlightedMessageId()
 
 const authorName = computed(() =>
   props.message.authorId === undefined
@@ -20,7 +22,11 @@ const authorName = computed(() =>
 </script>
 
 <template>
-  <div class="chat-system-message" :data-message-id="message.id">
+  <div
+    class="chat-system-message"
+    :class="{ 'chat-system-message--highlighted': highlightedId === message.id }"
+    :data-message-id="message.id"
+  >
     <BasePill>
       <button
         v-if="message.authorId !== undefined"
@@ -39,6 +45,10 @@ const authorName = computed(() =>
 .chat-system-message {
   display: flex;
   justify-content: center;
+}
+
+.chat-system-message--highlighted .chat-pill {
+  animation: chat-bubble-highlight 1.5s ease-out;
 }
 
 .chat-system-message .chat-message-text {

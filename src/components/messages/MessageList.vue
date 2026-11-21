@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   computed,
+  nextTick,
   onBeforeUnmount,
   onBeforeUpdate,
   onMounted,
@@ -9,6 +10,7 @@ import {
   useTemplateRef,
 } from 'vue'
 import { useChatContext } from '../../composables/chatContext'
+import { provideHighlightedMessageId } from '../../composables/messageHighlight'
 import type { ListId, MessageId, OpenChat, UserId } from '../../types'
 import { buildFeed } from '../../utils/messageFeed'
 import BaseSpinner from '../base/BaseSpinner.vue'
@@ -42,12 +44,18 @@ const { currentUserId, timeZone } = useChatContext()
 const BOTTOM_THRESHOLD = 40
 /** За сколько px до края просим следующую порцию истории: чтобы она успела прийти до самого края. */
 const EDGE_THRESHOLD = 200
+/** Сколько подсвечиваем сообщение после перехода к нему, мс. */
+const HIGHLIGHT_DURATION = 1500
+/** Сколько ждём, пока движок подгрузит сообщение, к которому перешли, мс. Позже переход уже не нужен. */
+const PENDING_TARGET_TTL = 10_000
 /** Как часто сообщаем о прочитанном при прокрутке, мс. */
 const READ_CHECK_DELAY = 200
 /** Сколько px сообщения должно быть видно, чтобы оно считалось увиденным (если оно не выше этого). */
 const SEEN_MIN_VISIBLE = 40
 
 const scroller = useTemplateRef<HTMLElement>('scroller')
+const highlightedId = ref<MessageId>()
+provideHighlightedMessageId(highlightedId)
 const isAtBottom = ref(true)
 
 // Метка «Непрочитанные сообщения» остаётся там, где была при открытии чата. Когда пользователь
@@ -169,6 +177,57 @@ function isOwnLastMessage(): boolean {
   return last?.type === 'user' && last.authorId === currentUserId.value
 }
 
+let highlightTimer: ReturnType<typeof setTimeout> | undefined
+let pendingTargetId: MessageId | undefined
+let pendingTargetTimer: ReturnType<typeof setTimeout> | undefined
+
+function highlight(messageId: MessageId) {
+  clearTimeout(highlightTimer)
+  // Сбрасываем и ставим заново, иначе повторный переход к тому же сообщению не перезапустит подсветку
+  highlightedId.value = undefined
+  void nextTick(() => {
+    highlightedId.value = messageId
+    highlightTimer = setTimeout(() => {
+      highlightedId.value = undefined
+    }, HIGHLIGHT_DURATION)
+  })
+}
+
+/** Прокручивает так, чтобы сообщение оказалось посередине области, и подсвечивает его. */
+function revealMessage(messageId: MessageId, behavior: ScrollBehavior) {
+  const element = scroller.value
+  if (!element) return
+  const items = element.querySelectorAll<HTMLElement>('[data-message-id]')
+  const target = Array.from(items).find((item) => item.dataset.messageId === messageId)
+  if (!target) return
+  const targetRect = target.getBoundingClientRect()
+  const viewRect = element.getBoundingClientRect()
+  const offset = targetRect.top - viewRect.top - (element.clientHeight - targetRect.height) / 2
+  element.scrollTo({ top: element.scrollTop + offset, behavior })
+  highlight(messageId)
+}
+
+function clearPendingTarget() {
+  clearTimeout(pendingTargetTimer)
+  pendingTargetId = undefined
+}
+
+/**
+ * Переход к сообщению (из цитаты). Загруженное показываем сами, а для далёкого просим движок
+ * заменить загруженную часть окном вокруг него и показываем, когда оно появится.
+ */
+function goToMessage(messageId: MessageId) {
+  if (props.chat.messages.some((message) => message.id === messageId)) {
+    clearPendingTarget()
+    revealMessage(messageId, 'smooth')
+    return
+  }
+  clearPendingTarget()
+  pendingTargetId = messageId
+  pendingTargetTimer = setTimeout(clearPendingTarget, PENDING_TARGET_TTL)
+  emit('goToMessage', { messageId })
+}
+
 function scrollToBottom(behavior: ScrollBehavior = 'auto') {
   scroller.value?.scrollTo({ top: scroller.value.scrollHeight, behavior })
 }
@@ -213,6 +272,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', onVisibilityChange)
   clearTimeout(readCheckTimer)
+  clearTimeout(highlightTimer)
+  clearTimeout(pendingTargetTimer)
 })
 
 onBeforeUpdate(() => {
@@ -248,7 +309,17 @@ onUpdated(() => {
   rememberRenderedIds()
   requestMoreIfNearEdge(isNewData)
   if (isNewData) scheduleReadCheck()
+
+  if (pendingTargetId !== undefined) {
+    const targetId = pendingTargetId
+    if (props.chat.messages.some((message) => message.id === targetId)) {
+      clearPendingTarget()
+      revealMessage(targetId, 'auto')
+    }
+  }
 })
+
+defineExpose({ goToMessage })
 </script>
 
 <template>
@@ -269,7 +340,7 @@ onUpdated(() => {
             :is-outgoing="item.isOutgoing"
             :show-author="showAuthors && !item.isOutgoing"
             @open-user="emit('openUser', $event)"
-            @go-to-message="emit('goToMessage', $event)"
+            @go-to-message="goToMessage($event.messageId)"
           />
         </template>
       </div>

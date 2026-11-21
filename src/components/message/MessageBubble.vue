@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useHighlightedMessageId } from '../../composables/messageHighlight'
 import type { MessageId, UserId, UserMessage } from '../../types'
 import MessageMeta from './MessageMeta.vue'
 import MessageReplyQuote from './MessageReplyQuote.vue'
@@ -21,6 +22,8 @@ const emit = defineEmits<{
   goToMessage: [payload: { messageId: MessageId }]
 }>()
 
+const highlightedId = useHighlightedMessageId()
+
 const meta = computed(() => ({
   sentAt: props.message.sentAt,
   status: props.message.status,
@@ -39,6 +42,7 @@ const meta = computed(() => ({
       {
         'chat-bubble--joined-before': !isFirstInGroup,
         'chat-bubble--joined-after': !isLastInGroup,
+        'chat-bubble--highlighted': highlightedId === message.id,
       },
     ]"
   >
@@ -104,6 +108,27 @@ const meta = computed(() => ({
 
 .chat-bubble--outgoing:not(.chat-bubble--joined-after) {
   border-bottom-right-radius: var(--chat-bubble-radius-tail);
+}
+
+@keyframes chat-bubble-highlight {
+  from {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--chat-accent) 55%, transparent);
+  }
+
+  to {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+.chat-bubble--highlighted {
+  animation: chat-bubble-highlight 1.5s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-bubble--highlighted {
+    outline: 2px solid var(--chat-accent);
+    animation: none;
+  }
 }
 
 .chat-bubble__header {
