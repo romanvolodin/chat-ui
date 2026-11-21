@@ -79,6 +79,6 @@ defineExpose({ focus })
 }
 
 .chat-composer-input::placeholder {
-  color: var(--chat-text-muted);
+  color: var(--chat-text-placeholder);
 }
 </style>
