@@ -47,6 +47,7 @@ const pane = computed(() => (props.openChat ? 'chat' : 'list'))
           @reached-bottom="emit('reachedBottom', $event)"
           @read-until="emit('readUntil', $event)"
           @go-to-message="emit('goToMessage', $event)"
+          @set-reaction="emit('setReaction', $event)"
           @change-draft="emit('changeDraft', $event)"
           @send-message="emit('sendMessage', $event)"
           @edit-message="emit('editMessage', $event)"

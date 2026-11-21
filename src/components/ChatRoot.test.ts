@@ -233,6 +233,30 @@ describe('ChatRoot', () => {
       expect(onGoToMessage).toHaveBeenCalledWith({ messageId: '1' })
     })
 
+    it('сообщает движку о реакции на сообщение', () => {
+      const onSetReaction = vi.fn()
+      const chat: OpenChat = {
+        ...openChat,
+        messages: [
+          {
+            type: 'user',
+            id: '1',
+            authorId: 'ivan',
+            sentAt: new Date('2026-11-17T12:00:00Z'),
+            text: [{ text: 'Привет' }],
+            reactions: [{ icon: { emoji: '👍' }, count: 1 }],
+          },
+        ],
+      }
+      const { container } = mount({ openChat: chat, onSetReaction })
+      container.querySelector<HTMLElement>('.chat-reaction-chip')?.click()
+      expect(onSetReaction).toHaveBeenCalledWith({
+        messageId: '1',
+        icon: { emoji: '👍' },
+        isSet: true,
+      })
+    })
+
     it('отмечает открытый чат в списке', () => {
       const { container } = mount({ openChat })
       const selected = container.querySelectorAll('.chat-list-item--selected')

@@ -24,6 +24,7 @@ const emit = defineEmits<{
   reachedBottom: [payload: { list: ListId }]
   readUntil: [payload: { messageId: MessageId }]
   goToMessage: [payload: { messageId: MessageId }]
+  setReaction: ChatEvents['setReaction']
   changeDraft: ChatEvents['changeDraft']
   sendMessage: ChatEvents['sendMessage']
   editMessage: ChatEvents['editMessage']
@@ -42,6 +43,7 @@ const emit = defineEmits<{
       @reached-bottom="emit('reachedBottom', $event)"
       @read-until="emit('readUntil', $event)"
       @go-to-message="emit('goToMessage', $event)"
+      @set-reaction="emit('setReaction', $event)"
     />
     <ChatFooter
       :chat="chat"

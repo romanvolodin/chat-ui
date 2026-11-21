@@ -11,7 +11,7 @@ import {
 } from 'vue'
 import { useChatContext } from '../../composables/chatContext'
 import { provideHighlightedMessageId } from '../../composables/messageHighlight'
-import type { ListId, MessageId, OpenChat, UserId } from '../../types'
+import type { ChatEvents, ListId, MessageId, OpenChat, UserId } from '../../types'
 import { buildFeed } from '../../utils/messageFeed'
 import BaseSpinner from '../base/BaseSpinner.vue'
 import DateDivider from './DateDivider.vue'
@@ -36,6 +36,7 @@ const emit = defineEmits<{
   reachedBottom: [payload: { list: ListId }]
   readUntil: [payload: { messageId: MessageId }]
   goToMessage: [payload: { messageId: MessageId }]
+  setReaction: ChatEvents['setReaction']
 }>()
 
 const { currentUserId, timeZone } = useChatContext()
@@ -341,6 +342,7 @@ defineExpose({ goToMessage })
             :show-author="showAuthors && !item.isOutgoing"
             @open-user="emit('openUser', $event)"
             @go-to-message="goToMessage($event.messageId)"
+            @set-reaction="emit('setReaction', $event)"
           />
         </template>
       </div>

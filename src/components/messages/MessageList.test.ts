@@ -674,4 +674,25 @@ describe('MessageList', () => {
       expect(highlightedIds(container)).toEqual([])
     })
   })
+
+  it('нажатие на реакцию передаёт наружу установку реакции', () => {
+    const onSetReaction = vi.fn()
+    const messages: Message[] = [
+      {
+        type: 'user',
+        id: '1',
+        authorId: 'ivan',
+        sentAt: sampleNow,
+        text: [{ text: 'Привет' }],
+        reactions: [{ icon: { emoji: '🔥' }, count: 2, isMine: true }],
+      },
+    ]
+    const { container } = mount(chatWith({ messages }), { onSetReaction })
+    container.querySelector<HTMLElement>('.chat-reaction-chip')?.click()
+    expect(onSetReaction).toHaveBeenCalledWith({
+      messageId: '1',
+      icon: { emoji: '🔥' },
+      isSet: false,
+    })
+  })
 })

@@ -103,4 +103,51 @@ describe('MessageItem', () => {
     container.querySelector<HTMLElement>('.chat-reply-quote')?.click()
     expect(onGoToMessage).toHaveBeenCalledWith({ messageId: 'm0' })
   })
+
+  describe('реакции', () => {
+    const reactions = [
+      { icon: { emoji: '👍' }, count: 3 },
+      { icon: { emoji: '🔥' }, count: 1, isMine: true },
+    ]
+
+    it('показываются под пузырём', () => {
+      const container = mount({ message: { ...message, reactions } })
+      const item = container.querySelector('.chat-message-item')
+      const order = Array.from(item?.children ?? []).map((child) => child.className)
+      expect(order[0]).toContain('chat-bubble')
+      expect(order[1]).toBe('chat-message-reactions')
+    })
+
+    it('у сообщения без реакций блока нет', () => {
+      expect(mount().querySelector('.chat-message-reactions')).toBeNull()
+    })
+
+    it('у исходящего сообщения прижаты вправо', () => {
+      const container = mount({ isOutgoing: true, message: { ...message, reactions } })
+      expect(container.querySelector('.chat-message-reactions--outgoing')).not.toBeNull()
+    })
+
+    it('нажатие ставит или снимает реакцию', () => {
+      const onSetReaction = vi.fn()
+      const container = mount({ message: { ...message, reactions }, onSetReaction })
+      const chips = container.querySelectorAll<HTMLElement>('.chat-reaction-chip')
+      chips[0]?.click()
+      chips[1]?.click()
+      expect(onSetReaction).toHaveBeenNthCalledWith(1, {
+        messageId: 'm1',
+        icon: { emoji: '👍' },
+        isSet: true,
+      })
+      expect(onSetReaction).toHaveBeenNthCalledWith(2, {
+        messageId: 'm1',
+        icon: { emoji: '🔥' },
+        isSet: false,
+      })
+    })
+
+    it('у скрытого сообщения реакций нет', () => {
+      const container = mount({ message: { ...message, authorId: 'blocked', reactions } })
+      expect(container.querySelector('.chat-message-reactions')).toBeNull()
+    })
+  })
 })

@@ -143,4 +143,18 @@ describe('MessageGroup', () => {
     expect(container.querySelector('.chat-bubble')).toBeNull()
     expect(container.textContent).not.toContain('Сообщение 1')
   })
+
+  it('нажатие на реакцию передаёт наружу установку реакции', () => {
+    const onSetReaction = vi.fn()
+    const container = mount({
+      messages: [{ ...message('1'), reactions: [{ icon: { emoji: '👍' }, count: 1 }] }],
+      onSetReaction,
+    })
+    container.querySelector<HTMLElement>('.chat-reaction-chip')?.click()
+    expect(onSetReaction).toHaveBeenCalledWith({
+      messageId: '1',
+      icon: { emoji: '👍' },
+      isSet: true,
+    })
+  })
 })

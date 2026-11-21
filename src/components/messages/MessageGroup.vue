@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useChatContext } from '../../composables/chatContext'
-import type { MessageId, UserId, UserMessage } from '../../types'
+import type { ChatEvents, MessageId, UserId, UserMessage } from '../../types'
 import { UNKNOWN_USER_NAME } from '../../utils/excerpt'
 import BaseAvatar from '../base/BaseAvatar.vue'
 import { getColorIndex } from '../base/avatarAppearance'
@@ -21,6 +21,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   openUser: [payload: { userId: UserId }]
   goToMessage: [payload: { messageId: MessageId }]
+  setReaction: ChatEvents['setReaction']
 }>()
 
 const { users } = useChatContext()
@@ -58,6 +59,7 @@ function openAuthor() {
         :is-last-in-group="index === messages.length - 1"
         @open-user="emit('openUser', $event)"
         @go-to-message="emit('goToMessage', $event)"
+        @set-reaction="emit('setReaction', $event)"
       >
         <template v-if="showAuthor && index === 0" #header>
           <button

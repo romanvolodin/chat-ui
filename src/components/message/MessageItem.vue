@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useChatContext } from '../../composables/chatContext'
-import type { MessageId, UserId, UserMessage } from '../../types'
+import type { ChatEvents, MessageId, UserId, UserMessage } from '../../types'
 import MessageBubble from './MessageBubble.vue'
 import MessageHiddenStub from './MessageHiddenStub.vue'
+import MessageReactions from './MessageReactions.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -18,6 +19,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   openUser: [payload: { userId: UserId }]
   goToMessage: [payload: { messageId: MessageId }]
+  setReaction: ChatEvents['setReaction']
 }>()
 
 const { users } = useChatContext()
@@ -40,6 +42,13 @@ const isHidden = computed(() => users.value[props.message.authorId]?.isBlocked =
     >
       <template v-if="$slots.header" #header><slot name="header" /></template>
     </MessageBubble>
+    <MessageReactions
+      v-if="!isHidden && message.reactions"
+      :message-id="message.id"
+      :reactions="message.reactions"
+      :is-outgoing="isOutgoing"
+      @set-reaction="emit('setReaction', $event)"
+    />
   </div>
 </template>
 
