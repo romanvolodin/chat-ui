@@ -1,4 +1,4 @@
-import type { Message } from '../types'
+import type { Message, MessageExcerpt, Reaction, UserMessage } from '../types'
 import { sampleNow } from './sampleData'
 
 const MINUTE = 60_000
@@ -20,7 +20,7 @@ const phrases = [
 const sentAtOf = (number: number) =>
   new Date(sampleNow.getTime() - (LAST_NUMBER - number) * STEP_MINUTES * MINUTE)
 
-function sampleMessage(number: number): Message {
+function baseMessage(number: number): Message {
   const id = `m${String(number)}`
   const sentAt = sentAtOf(number)
 
@@ -55,6 +55,43 @@ function sampleMessage(number: number): Message {
     text,
     ...(authorId === 'me' ? { status: number < 195 ? ('read' as const) : ('sent' as const) } : {}),
   }
+}
+
+function excerptOf(message: Message): MessageExcerpt {
+  return message.type === 'system'
+    ? { isSystem: true, text: message.text }
+    : { authorId: message.authorId, ...(message.text ? { text: message.text } : {}) }
+}
+
+function reactionsOf(number: number): Reaction[] | undefined {
+  if (number % 9 === 0) {
+    return [
+      { icon: { emoji: '👍' }, count: 2 },
+      { icon: { emoji: '🔥' }, count: 1, isMine: true },
+    ]
+  }
+  if (number % 13 === 0) return [{ icon: { emoji: '😂' }, count: 5 }]
+  return undefined
+}
+
+// Каждое одиннадцатое сообщение отвечает на третье перед ним; сообщение 162 отвечает на далёкое (120),
+// которого в загруженной части нет: так видно переход через движок
+function replyTargetOf(number: number): number | undefined {
+  if (number === 162) return 120
+  return number % 11 === 0 ? number - 3 : undefined
+}
+
+function sampleMessage(number: number): Message {
+  const message = baseMessage(number)
+  if (message.type === 'system') return message
+
+  const reactions = reactionsOf(number)
+  const target = replyTargetOf(number)
+  const reply: Pick<UserMessage, 'replyTo'> =
+    target === undefined
+      ? {}
+      : { replyTo: { messageId: `m${String(target)}`, excerpt: excerptOf(baseMessage(target)) } }
+  return { ...message, ...(reactions ? { reactions } : {}), ...reply }
 }
 
 /**
