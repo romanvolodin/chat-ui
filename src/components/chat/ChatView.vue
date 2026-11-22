@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useChatContext } from '../../composables/chatContext'
 import type {
   ChatEvents,
@@ -17,6 +17,7 @@ import DeleteMessagesDialog from '../message/DeleteMessagesDialog.vue'
 import MessageList from '../messages/MessageList.vue'
 import ChatFooter from './ChatFooter.vue'
 import ChatHeader from './ChatHeader.vue'
+import PinnedMessagesBar from './PinnedMessagesBar.vue'
 
 withDefaults(
   defineProps<{
@@ -45,7 +46,10 @@ const emit = defineEmits<{
   setMessagePinned: ChatEvents['setMessagePinned']
   getLink: ChatEvents['getLink']
   deleteMessages: ChatEvents['deleteMessages']
+  openPinned: ChatEvents['openPinned']
 }>()
+
+const list = useTemplateRef<InstanceType<typeof MessageList>>('list')
 
 const { users, currentUserId } = useChatContext()
 
@@ -86,7 +90,14 @@ function confirmDelete(scope: 'self' | 'everyone') {
 <template>
   <div class="chat-view">
     <ChatHeader :chat="chat" @close-chat="emit('closeChat')" />
+    <!-- Нажатие на закреплённое идёт тем же путём, что и на цитату: загруженное показываем сами, далёкое просим у движка -->
+    <PinnedMessagesBar
+      :pinned="chat.pinned ?? []"
+      @go-to-message="list?.goToMessage($event.messageId)"
+      @open-pinned="emit('openPinned', { chatId: chat.id })"
+    />
     <MessageList
+      ref="list"
       :chat="chat"
       :is-loading="isLoadingMessages"
       @open-user="emit('openUser', $event)"

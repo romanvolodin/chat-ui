@@ -58,6 +58,7 @@ const pane = computed(() => (props.openChat ? 'chat' : 'list'))
           @set-message-pinned="emit('setMessagePinned', $event)"
           @get-link="emit('getLink', $event)"
           @delete-messages="emit('deleteMessages', $event)"
+          @open-pinned="emit('openPinned', $event)"
           @change-draft="emit('changeDraft', $event)"
           @send-message="emit('sendMessage', $event)"
           @edit-message="emit('editMessage', $event)"

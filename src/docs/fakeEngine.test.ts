@@ -275,7 +275,49 @@ describe('useFakeEngine', () => {
       engine.listeners.setMessagePinned({ messageId: 'm170', isPinned: true })
       expect(find(engine, 'm170')?.isPinned).toBe(true)
       engine.listeners.setMessagePinned({ messageId: 'm170', isPinned: false })
-      expect(find(engine, 'm170')?.isPinned).toBe(false)
+      expect(find(engine, 'm170')?.isPinned).toBeFalsy()
+    })
+
+    it('сначала закреплены далёкое и загруженное сообщения', () => {
+      const engine = openedEngine()
+      expect(engine.openChat.value?.pinned?.map((pin) => pin.messageId)).toEqual(['m120', 'm184'])
+      expect(find(engine, 'm184')?.isPinned).toBe(true)
+    })
+
+    it('новое закреплённое встаёт в конец списка вместе с цитатой', () => {
+      const engine = openedEngine()
+      engine.listeners.setMessagePinned({ messageId: 'm170', isPinned: true })
+      const pinned = engine.openChat.value?.pinned ?? []
+      expect(pinned.at(-1)?.messageId).toBe('m170')
+      expect(pinned.at(-1)?.excerpt.text).toBeDefined()
+    })
+
+    it('открепление убирает сообщение из списка закреплённых', () => {
+      const engine = openedEngine()
+      engine.listeners.setMessagePinned({ messageId: 'm184', isPinned: false })
+      expect(engine.openChat.value?.pinned?.map((pin) => pin.messageId)).toEqual(['m120'])
+    })
+
+    it('повторное закрепление не дублирует сообщение', () => {
+      const engine = openedEngine()
+      engine.listeners.setMessagePinned({ messageId: 'm184', isPinned: true })
+      expect(engine.openChat.value?.pinned?.filter((pin) => pin.messageId === 'm184')).toHaveLength(
+        1,
+      )
+    })
+
+    it('закреплённые помнятся при возврате в чат', () => {
+      const engine = openedEngine()
+      engine.listeners.setMessagePinned({ messageId: 'm170', isPinned: true })
+      engine.listeners.closeChat()
+      engine.listeners.selectChat({ chatId })
+      expect(engine.openChat.value?.pinned?.map((pin) => pin.messageId)).toContain('m170')
+    })
+
+    it('запрос чата закреплённых записывается в журнал', () => {
+      const engine = openedEngine()
+      engine.listeners.openPinned({ chatId })
+      expect(engine.log.value[0]).toContain('openPinned')
     })
 
     it('правка меняет текст и помечает сообщение изменённым', () => {

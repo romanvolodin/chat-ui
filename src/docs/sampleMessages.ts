@@ -105,3 +105,8 @@ export function createSampleMessages(from: number, to: number): Message[] {
 
 /** Сорок последних сообщений: охватывают вчера и сегодня, внутри есть системное сообщение. */
 export const sampleMessages = createSampleMessages(161, 200)
+
+/** Цитата сообщения с этим номером: из неё состоят закреплённые сообщения в примерах. */
+export function sampleExcerpt(number: number): MessageExcerpt {
+  return excerptOf(baseMessage(number))
+}

@@ -283,6 +283,17 @@ describe('ChatRoot', () => {
       expect(onSetMessagePinned).toHaveBeenCalledWith({ messageId: '1', isPinned: true })
     })
 
+    it('кнопка в полосе закреплённых просит движок открыть чат закреплённых сообщений', () => {
+      const onOpenPinned = vi.fn()
+      const chat: OpenChat = {
+        ...openChat,
+        pinned: [{ messageId: 'm1', excerpt: { authorId: 'ivan', text: [{ text: 'Важное' }] } }],
+      }
+      const { container } = mount({ openChat: chat, onOpenPinned })
+      container.querySelector<HTMLElement>('.chat-pinned-bar .chat-icon-button')?.click()
+      expect(onOpenPinned).toHaveBeenCalledWith({ chatId: chat.id })
+    })
+
     it('отмечает открытый чат в списке', () => {
       const { container } = mount({ openChat })
       const selected = container.querySelectorAll('.chat-list-item--selected')

@@ -8,12 +8,13 @@ import type {
   MessageId,
   MessageStatus,
   OpenChat,
+  PinnedMessage,
   Reaction,
   ReactionIcon,
   UserMessage,
 } from '../types'
 import { sampleChats, sampleNow } from './sampleData'
-import { createSampleMessages } from './sampleMessages'
+import { createSampleMessages, sampleExcerpt } from './sampleMessages'
 
 // Переписка в примерах: сообщения с номерами от FIRST до LAST, а последние LATEST_FROM..LAST открываются первыми
 const FIRST = 1
@@ -29,7 +30,8 @@ interface ChatState {
   to: number
   sent: UserMessage[]
   reactions: Record<MessageId, Reaction[]>
-  pinned: Record<MessageId, boolean>
+  /** Закреплённые сообщения в порядке закрепления: новое в конце. */
+  pinned: PinnedMessage[]
   edits: Record<MessageId, FormattedText>
   deleted: Set<MessageId>
 }
@@ -77,12 +79,12 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
     const withOverrides = (message: Message): Message => {
       if (message.type !== 'user') return message
       const reactions = state.reactions[message.id]
-      const isPinned = state.pinned[message.id]
+      const isPinned = state.pinned.some((pin) => pin.messageId === message.id)
       const edited = state.edits[message.id]
       return {
         ...message,
         ...(reactions ? { reactions } : {}),
-        ...(isPinned === undefined ? {} : { isPinned }),
+        ...(isPinned ? { isPinned } : {}),
         ...(edited ? { text: edited, editedAt: new Date(sampleNow.getTime() + 30 * 60_000) } : {}),
       }
     }
@@ -91,6 +93,7 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
     return {
       ...state.chat,
       messages: all.filter((message) => !state.deleted.has(message.id)).map(withOverrides),
+      pinned: state.pinned,
       hasMoreBefore: state.from > FIRST,
       hasMoreAfter: state.to < LAST,
     }
@@ -117,7 +120,11 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
       to: LAST,
       sent: [],
       reactions: {},
-      pinned: {},
+      // Для примера закреплены далёкое сообщение (m120) и загруженное (m184): видно оба пути перехода
+      pinned: [120, 184].map((number) => ({
+        messageId: `m${String(number)}`,
+        excerpt: sampleExcerpt(number),
+      })),
       edits: {},
       deleted: new Set(),
     }
@@ -274,7 +281,23 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
     setMessagePinned({ messageId, isPinned }: ChatEvents['setMessagePinned'][0]) {
       const state = currentState()
       if (!state || !openChat.value) return
-      state.pinned[messageId] = isPinned
+      const message = openChat.value.messages.find(
+        (item): item is UserMessage => item.type === 'user' && item.id === messageId,
+      )
+      const others = state.pinned.filter((pin) => pin.messageId !== messageId)
+      state.pinned =
+        isPinned && message
+          ? [
+              ...others,
+              {
+                messageId,
+                excerpt: {
+                  authorId: message.authorId,
+                  ...(message.text ? { text: message.text } : {}),
+                },
+              },
+            ]
+          : others
       publish(openChat.value.id)
       addToLog(`setMessagePinned ${messageId} ${isPinned ? 'закреплено' : 'откреплено'}`)
     },
@@ -308,6 +331,11 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
           : `https://example.com/chats/${payload.chatId}`
       requestedLink.value = { url }
       addToLog(`getLink → ${url}`)
+    },
+
+    // Чат закреплённых сообщений открывает движок; в историях его нет, поэтому только записываем запрос
+    openPinned({ chatId }: ChatEvents['openPinned'][0]) {
+      addToLog(`openPinned ${chatId} → чат закреплённых сообщений (в историях не открывается)`)
     },
 
     setChatMuted({ isMuted }: ChatEvents['setChatMuted'][0]) {

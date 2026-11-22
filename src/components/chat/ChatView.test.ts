@@ -332,4 +332,71 @@ describe('ChatView', () => {
       })
     })
   })
+
+  describe('полоса закреплённых', () => {
+    const pinnedChat = (extra: Partial<OpenChat> = {}): OpenChat => ({
+      ...chat,
+      messages: [
+        {
+          type: 'user',
+          id: 'near',
+          authorId: 'ivan',
+          sentAt: new Date('2026-11-17T12:00:00Z'),
+          text: [{ text: 'Рядом' }],
+        },
+      ],
+      pinned: [
+        {
+          messageId: 'far',
+          excerpt: { authorId: 'ivan', text: [{ text: 'Далёкое закреплённое' }] },
+        },
+        { messageId: 'near', excerpt: { authorId: 'ivan', text: [{ text: 'Рядом' }] } },
+      ],
+      ...extra,
+    })
+    const bar = (container: HTMLElement) => container.querySelector('.chat-pinned-bar')
+
+    it('стоит между шапкой и сообщениями', () => {
+      mounted = mountWithChatContext(ChatView, { chat: pinnedChat() })
+      const view = mounted.container.querySelector('.chat-view')
+      const order = Array.from(view?.children ?? []).map((element) => element.className)
+      expect(order.slice(0, 3)).toEqual(['chat-header', 'chat-pinned-bar', 'chat-message-list'])
+    })
+
+    it('без закреплённых полосы нет', () => {
+      mounted = mountWithChatContext(ChatView, { chat: pinnedChat({ pinned: undefined }) })
+      expect(bar(mounted.container)).toBeNull()
+    })
+
+    it('нажатие на далёкое закреплённое просит движок перейти к нему', () => {
+      const onGoToMessage = vi.fn()
+      mounted = mountWithChatContext(ChatView, { chat: pinnedChat(), onGoToMessage })
+      mounted.container.querySelector<HTMLElement>('.chat-pinned-bar__main')?.click()
+      expect(onGoToMessage).toHaveBeenCalledExactlyOnceWith({ messageId: 'far' })
+    })
+
+    it('нажатие на загруженное закреплённое показывает его само и подсвечивает', async () => {
+      const onGoToMessage = vi.fn()
+      mounted = mountWithChatContext(ChatView, { chat: pinnedChat(), onGoToMessage })
+      const main = mounted.container.querySelector<HTMLElement>('.chat-pinned-bar__main')
+      main?.click()
+      await nextTick()
+      main?.click()
+      await nextTick()
+      await nextTick()
+      expect(onGoToMessage).toHaveBeenCalledOnce()
+      expect(
+        mounted.container
+          .querySelector('.chat-bubble--highlighted')
+          ?.getAttribute('data-message-id'),
+      ).toBe('near')
+    })
+
+    it('кнопка справа просит открыть чат закреплённых сообщений', () => {
+      const onOpenPinned = vi.fn()
+      mounted = mountWithChatContext(ChatView, { chat: pinnedChat(), onOpenPinned })
+      mounted.container.querySelector<HTMLElement>('.chat-pinned-bar .chat-icon-button')?.click()
+      expect(onOpenPinned).toHaveBeenCalledExactlyOnceWith({ chatId: chat.id })
+    })
+  })
 })
