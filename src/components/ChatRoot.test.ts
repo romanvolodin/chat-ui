@@ -298,4 +298,59 @@ describe('ChatRoot', () => {
       expect(onSelectChat).toHaveBeenCalledWith({ chatId: sampleChats[0]?.id })
     })
   })
+
+  describe('запрошенная ссылка', () => {
+    const stubClipboard = (clipboard: unknown) => {
+      Object.defineProperty(navigator, 'clipboard', { value: clipboard, configurable: true })
+    }
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+    afterEach(() => {
+      stubClipboard(undefined)
+    })
+
+    it('копирует адрес в буфер и говорит «Ссылка скопирована»', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined)
+      stubClipboard({ writeText })
+      const { container, state } = mount()
+      state.requestedLink = { url: 'https://example.com/a' }
+      await settle()
+      await nextTick()
+      expect(writeText).toHaveBeenCalledExactlyOnceWith('https://example.com/a')
+      expect(container.querySelector('.chat-toast')?.textContent).toBe('Ссылка скопирована')
+      expect(container.querySelector('.chat-link-dialog__input')).toBeNull()
+    })
+
+    it('если браузер не разрешил запись, показывает адрес для ручного копирования', async () => {
+      stubClipboard({ writeText: vi.fn().mockRejectedValue(new Error('NotAllowedError')) })
+      const { container, state } = mount()
+      state.requestedLink = { url: 'https://example.com/a' }
+      await settle()
+      await nextTick()
+      expect(container.querySelector<HTMLInputElement>('.chat-link-dialog__input')?.value).toBe(
+        'https://example.com/a',
+      )
+      expect(container.querySelector('.chat-toast')).toBeNull()
+    })
+
+    it('повторный запрос той же ссылки обрабатывается снова', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined)
+      stubClipboard({ writeText })
+      const { state } = mount()
+      state.requestedLink = { url: 'https://example.com/a' }
+      await settle()
+      state.requestedLink = { url: 'https://example.com/a' }
+      await settle()
+      expect(writeText).toHaveBeenCalledTimes(2)
+    })
+
+    it('пока ссылку не запрашивали, ничего не копирует и не показывает', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined)
+      stubClipboard({ writeText })
+      const { container } = mount()
+      await settle()
+      expect(writeText).not.toHaveBeenCalled()
+      expect(container.querySelector('.chat-toast')).toBeNull()
+    })
+  })
 })

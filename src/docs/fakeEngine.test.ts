@@ -302,10 +302,27 @@ describe('useFakeEngine', () => {
       expect(loadedIds(engine)).not.toContain('m170')
     })
 
-    it('запрос ссылки записывается в журнал', () => {
+    it('на запрос ссылки отвечает адресом сообщения', () => {
       const engine = openedEngine()
       engine.listeners.getLink({ messageId: 'm170' })
-      expect(engine.log.value[0]).toContain('getLink m170')
+      expect(engine.requestedLink.value?.url).toBe(
+        `https://example.com/chats/${chatId}/messages/m170`,
+      )
+    })
+
+    it('на запрос ссылки на чат отвечает адресом чата', () => {
+      const engine = openedEngine()
+      engine.listeners.getLink({ chatId })
+      expect(engine.requestedLink.value?.url).toBe(`https://example.com/chats/${chatId}`)
+    })
+
+    it('каждый ответ новый объект, даже если адрес тот же', () => {
+      const engine = openedEngine()
+      engine.listeners.getLink({ messageId: 'm170' })
+      const first = engine.requestedLink.value
+      engine.listeners.getLink({ messageId: 'm170' })
+      expect(engine.requestedLink.value).not.toBe(first)
+      expect(engine.requestedLink.value).toEqual(first)
     })
   })
 })

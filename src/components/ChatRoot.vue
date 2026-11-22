@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { provideChatContext } from '../composables/chatContext'
+import { useRequestedLink } from '../composables/requestedLink'
+import { provideToast } from '../composables/toast'
 import type { ChatEvents, ChatRootProps } from '../types'
 import ChatView from './chat/ChatView.vue'
+import LinkDialog from './chat/LinkDialog.vue'
+import ToastHost from './chat/ToastHost.vue'
 import ChatSidebar from './chats/ChatSidebar.vue'
 
 const props = defineProps<ChatRootProps>()
@@ -10,6 +14,9 @@ const props = defineProps<ChatRootProps>()
 const emit = defineEmits<ChatEvents>()
 
 provideChatContext(props)
+
+const toast = provideToast()
+const { manualUrl, isManualDialogOpen } = useRequestedLink(() => props.requestedLink, toast)
 
 // В узком экране видна одна панель: диалог или список чатов
 const pane = computed(() => (props.openChat ? 'chat' : 'list'))
@@ -58,6 +65,8 @@ const pane = computed(() => (props.openChat ? 'chat' : 'list'))
         <p v-else class="chat-root__empty">Выберите чат</p>
       </div>
     </div>
+    <ToastHost />
+    <LinkDialog v-model="isManualDialogOpen" :url="manualUrl ?? ''" />
   </div>
 </template>
 

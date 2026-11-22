@@ -62,6 +62,7 @@ function nextReactions(current: Reaction[], icon: ReactionIcon, isSet: boolean):
 export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
   const openChat = ref<OpenChat>()
   const loadingLists = ref<ListId[]>([])
+  const requestedLink = ref<{ url: string }>()
   const log = ref<string[]>([
     'Откройте любой чат: лента встанет на метку «Непрочитанные сообщения»',
   ])
@@ -298,9 +299,15 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
     },
 
     // Настоящий движок вернёт адрес в `requestedLink`; здесь только записываем запрос
+    // Адрес приходит данными, и каждый ответ это новый объект: так интерфейс замечает и повторный запрос
     getLink(payload: ChatEvents['getLink'][0]) {
-      const target = 'messageId' in payload ? payload.messageId : payload.chatId
-      addToLog(`getLink ${target} → https://example.com/${openChat.value?.id ?? ''}/${target}`)
+      const chatId = openChat.value?.id ?? ''
+      const url =
+        'messageId' in payload
+          ? `https://example.com/chats/${chatId}/messages/${payload.messageId}`
+          : `https://example.com/chats/${payload.chatId}`
+      requestedLink.value = { url }
+      addToLog(`getLink → ${url}`)
     },
 
     setChatMuted({ isMuted }: ChatEvents['setChatMuted'][0]) {
@@ -318,5 +325,5 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
     ),
   )
 
-  return { openChat, loadingLists, log, chats, listeners }
+  return { openChat, loadingLists, requestedLink, log, chats, listeners }
 }
