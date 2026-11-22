@@ -11,9 +11,20 @@ import {
 } from 'vue'
 import { useChatContext } from '../../composables/chatContext'
 import { provideHighlightedMessageId } from '../../composables/messageHighlight'
-import type { ChatEvents, ListId, MessageId, OpenChat, UserId } from '../../types'
+import type {
+  ChatEvents,
+  FormattedText,
+  ListId,
+  MessageId,
+  OpenChat,
+  UserId,
+  UserMessage,
+} from '../../types'
+import type { MessageMenuAction } from '../../utils/messageMenu'
 import { buildFeed } from '../../utils/messageFeed'
 import BaseSpinner from '../base/BaseSpinner.vue'
+import MessageContextMenu from '../message/MessageContextMenu.vue'
+import type { Point } from '../base/menuPosition'
 import DateDivider from './DateDivider.vue'
 import MessageGroup from './MessageGroup.vue'
 import ScrollDownButton from './ScrollDownButton.vue'
@@ -37,6 +48,13 @@ const emit = defineEmits<{
   readUntil: [payload: { messageId: MessageId }]
   goToMessage: [payload: { messageId: MessageId }]
   setReaction: ChatEvents['setReaction']
+  setMessagePinned: ChatEvents['setMessagePinned']
+  getLink: ChatEvents['getLink']
+  /** Меню: начать ответ. Режим ответа хранит `ChatView`, а не движок. */
+  startReply: [payload: { message: UserMessage; quote?: FormattedText }]
+  startEdit: [payload: { message: UserMessage }]
+  /** Меню: удалить. Окно подтверждения показывает `ChatView`. */
+  requestDelete: [payload: { message: UserMessage }]
 }>()
 
 const { currentUserId, timeZone } = useChatContext()
@@ -167,7 +185,70 @@ function onVisibilityChange() {
   if (document.visibilityState === 'visible') scheduleReadCheck()
 }
 
+// Контекстное меню сообщения. Одно на весь список: его вызывают правым нажатием на пузырь
+const isMenuOpen = ref(false)
+const menuAnchor = ref<Point | null>(null)
+const menuMessage = ref<UserMessage>()
+const menuQuote = ref<FormattedText>()
+
+/** Слова, выделенные в тексте именно этого пузыря: ответ на фрагмент цитирует их. */
+function selectedWords(bubble: HTMLElement): FormattedText | undefined {
+  const selection = window.getSelection()
+  const text = selection?.toString().trim() ?? ''
+  if (!selection?.anchorNode || text === '' || !bubble.contains(selection.anchorNode)) {
+    return undefined
+  }
+  return [{ text }]
+}
+
+function onContextMenu(event: MouseEvent) {
+  const target = event.target
+  if (!(target instanceof Element)) return
+  // Ссылка остаётся со стандартным меню браузера: открыть в новой вкладке, копировать адрес
+  if (target.closest('a')) return
+  const bubble = target.closest<HTMLElement>('.chat-bubble')
+  const id = bubble?.dataset.messageId
+  const message = props.chat.messages.find(
+    (item): item is UserMessage => item.type === 'user' && item.id === id,
+  )
+  if (!bubble || !message) return
+
+  event.preventDefault()
+  menuMessage.value = message
+  menuQuote.value = selectedWords(bubble)
+  menuAnchor.value = { x: event.clientX, y: event.clientY }
+  isMenuOpen.value = true
+}
+
+function onMenuAction(action: MessageMenuAction) {
+  const message = menuMessage.value
+  if (!message) return
+  const actions: Record<MessageMenuAction, () => void> = {
+    reply: () => {
+      emit('startReply', { message, ...(menuQuote.value ? { quote: menuQuote.value } : {}) })
+    },
+    edit: () => {
+      emit('startEdit', { message })
+    },
+    pin: () => {
+      emit('setMessagePinned', { messageId: message.id, isPinned: true })
+    },
+    unpin: () => {
+      emit('setMessagePinned', { messageId: message.id, isPinned: false })
+    },
+    getLink: () => {
+      emit('getLink', { messageId: message.id })
+    },
+    delete: () => {
+      emit('requestDelete', { message })
+    },
+  }
+  actions[action]()
+}
+
 function onScroll() {
+  // Меню стоит на месте, а сообщения под ним уезжают, поэтому при прокрутке закрываем его
+  isMenuOpen.value = false
   updateIsAtBottom()
   requestMoreIfNearEdge()
   scheduleReadCheck()
@@ -326,7 +407,7 @@ defineExpose({ goToMessage })
 <template>
   <div class="chat-message-list">
     <div ref="scroller" class="chat-message-list__scroller" @scroll.passive="onScroll">
-      <div class="chat-message-list__feed">
+      <div class="chat-message-list__feed" @contextmenu="onContextMenu">
         <template v-for="item in feed" :key="item.key">
           <DateDivider v-if="item.kind === 'date'" :date="item.date" />
           <UnreadDivider v-else-if="item.kind === 'unread'" />
@@ -347,6 +428,15 @@ defineExpose({ goToMessage })
         </template>
       </div>
     </div>
+    <MessageContextMenu
+      v-model="isMenuOpen"
+      :message="menuMessage"
+      :anchor="menuAnchor"
+      :is-outgoing="menuMessage?.authorId === currentUserId"
+      :can-write="chat.footer.type === 'input'"
+      :has-selection="menuQuote !== undefined"
+      @action="onMenuAction"
+    />
     <!-- Индикаторы поверх списка, а не в нём: появившись, они не сдвинут сообщения -->
     <div
       v-if="isLoading && chat.hasMoreBefore"

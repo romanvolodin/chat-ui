@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } fr
 import { nextTick, reactive } from 'vue'
 import { channelChat, groupChat, pinnedChat, sampleNow } from '../../docs/sampleData'
 import { mountWithChatContext } from '../../test-utils/mountWithChatContext'
-import type { Message, OpenChat } from '../../types'
+import type { Message, OpenChat, UserMessage } from '../../types'
 import MessageList from './MessageList.vue'
 
 const minute = 60_000
@@ -693,6 +693,188 @@ describe('MessageList', () => {
       messageId: '1',
       icon: { emoji: '🔥' },
       isSet: false,
+    })
+  })
+
+  describe('контекстное меню сообщения', () => {
+    const own: UserMessage = { ...(userMessage('own', 'me', 5) as UserMessage), status: 'read' }
+    const other = userMessage('other', 'ivan', 4) as UserMessage
+    const messages: Message[] = [other, own]
+
+    const openMenuOn = async (
+      container: HTMLElement,
+      selector: string,
+      init: MouseEventInit = {},
+    ) => {
+      const target = container.querySelector(selector)
+      if (!target) throw new Error(`Нет элемента ${selector}`)
+      const event = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 50,
+        clientY: 60,
+        ...init,
+      })
+      target.dispatchEvent(event)
+      await nextTick()
+      return event
+    }
+    const bubbleOf = (id: string) => `.chat-bubble[data-message-id="${id}"]`
+    const labels = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll('.chat-menu__item'), (item) => item.textContent.trim())
+    const choose = async (container: HTMLElement, label: string) => {
+      const item = Array.from(container.querySelectorAll<HTMLElement>('.chat-menu__item')).find(
+        (candidate) => candidate.textContent.trim() === label,
+      )
+      if (!item) throw new Error(`Нет пункта «${label}»`)
+      item.click()
+      await nextTick()
+    }
+
+    it('правое нажатие на пузырь открывает меню и отменяет меню браузера', async () => {
+      const { container } = mount(chatWith({ messages }))
+      const event = await openMenuOn(container, bubbleOf('other'))
+      expect(event.defaultPrevented).toBe(true)
+      expect(labels(container)).toEqual(['Ответить', 'Закрепить', 'Получить ссылку', 'Удалить'])
+    })
+
+    it('у своего сообщения в меню есть «Изменить»', async () => {
+      const { container } = mount(chatWith({ messages }))
+      await openMenuOn(container, bubbleOf('own'))
+      expect(labels(container)).toContain('Изменить')
+    })
+
+    it('если в чат писать нельзя, ответа и изменения в меню нет', async () => {
+      const chat = chatWith({ messages, footer: { type: 'readOnly' } })
+      const { container } = mount(chat)
+      await openMenuOn(container, bubbleOf('own'))
+      expect(labels(container)).toEqual(['Закрепить', 'Получить ссылку', 'Удалить'])
+    })
+
+    it('у закреплённого сообщения предлагает открепить', async () => {
+      const pinned = [{ ...other, isPinned: true }]
+      const { container } = mount(chatWith({ messages: pinned }))
+      await openMenuOn(container, bubbleOf('other'))
+      expect(labels(container)).toContain('Открепить')
+    })
+
+    it('на ссылке остаётся меню браузера', async () => {
+      const withLink: Message[] = [
+        { ...other, text: [{ text: 'сайт', format: ['link'], url: 'https://example.com' }] },
+      ]
+      const { container } = mount(chatWith({ messages: withLink }))
+      const event = await openMenuOn(container, 'a')
+      expect(event.defaultPrevented).toBe(false)
+      expect(container.querySelector('.chat-menu')).toBeNull()
+    })
+
+    it('на системном сообщении и на пустом месте меню нет', async () => {
+      const system: Message = {
+        type: 'system',
+        id: 's1',
+        sentAt: sampleNow,
+        text: [{ text: 'Начало обсуждения' }],
+      }
+      const { container } = mount(chatWith({ messages: [system] }))
+      const event = await openMenuOn(container, '.chat-system-message')
+      expect(event.defaultPrevented).toBe(false)
+      expect(container.querySelector('.chat-menu')).toBeNull()
+    })
+
+    it('на заглушке скрытого сообщения меню нет', async () => {
+      const hidden: Message[] = [userMessage('h', 'blocked', 3)]
+      const { container } = mount(chatWith({ messages: hidden }))
+      const event = await openMenuOn(container, '.chat-hidden-stub')
+      expect(event.defaultPrevented).toBe(false)
+      expect(container.querySelector('.chat-menu')).toBeNull()
+    })
+
+    it('закрывается при прокрутке', async () => {
+      const { container, scroller } = mount(chatWith({ messages }))
+      await openMenuOn(container, bubbleOf('other'))
+      expect(container.querySelector('.chat-menu')).not.toBeNull()
+      scroller.dispatchEvent(new Event('scroll'))
+      await nextTick()
+      expect(container.querySelector('.chat-menu')).toBeNull()
+    })
+
+    describe('действия', () => {
+      it('«Ответить» начинает ответ на сообщение', async () => {
+        const onStartReply = vi.fn()
+        const { container } = mount(chatWith({ messages }), { onStartReply })
+        await openMenuOn(container, bubbleOf('other'))
+        await choose(container, 'Ответить')
+        expect(onStartReply).toHaveBeenCalledExactlyOnceWith({ message: other })
+      })
+
+      it('если в тексте выделены слова, ответ цитирует именно их', async () => {
+        const onStartReply = vi.fn()
+        const { container } = mount(chatWith({ messages }), { onStartReply })
+        const bubble = container.querySelector(bubbleOf('other'))
+        const textNode = bubble?.querySelector('.chat-message-text')?.firstChild
+        vi.spyOn(window, 'getSelection').mockReturnValue({
+          toString: () => ' Сообщение ',
+          anchorNode: textNode,
+        } as unknown as Selection)
+        await openMenuOn(container, bubbleOf('other'))
+        expect(labels(container)[0]).toBe('Ответить на выделенное')
+        await choose(container, 'Ответить на выделенное')
+        expect(onStartReply).toHaveBeenCalledWith({
+          message: other,
+          quote: [{ text: 'Сообщение' }],
+        })
+      })
+
+      it('выделение в другом сообщении не считается', async () => {
+        const { container } = mount(chatWith({ messages }))
+        const otherBubble = container.querySelector(bubbleOf('own'))
+        vi.spyOn(window, 'getSelection').mockReturnValue({
+          toString: () => 'слова',
+          anchorNode: otherBubble?.querySelector('.chat-message-text')?.firstChild,
+        } as unknown as Selection)
+        await openMenuOn(container, bubbleOf('other'))
+        expect(labels(container)[0]).toBe('Ответить')
+      })
+
+      it('«Изменить» начинает редактирование своего сообщения', async () => {
+        const onStartEdit = vi.fn()
+        const { container } = mount(chatWith({ messages }), { onStartEdit })
+        await openMenuOn(container, bubbleOf('own'))
+        await choose(container, 'Изменить')
+        expect(onStartEdit).toHaveBeenCalledExactlyOnceWith({ message: own })
+      })
+
+      it('«Закрепить» и «Открепить» сообщают новое значение', async () => {
+        const onSetMessagePinned = vi.fn()
+        const { container, props } = mount(chatWith({ messages }), { onSetMessagePinned })
+        await openMenuOn(container, bubbleOf('other'))
+        await choose(container, 'Закрепить')
+        expect(onSetMessagePinned).toHaveBeenLastCalledWith({ messageId: 'other', isPinned: true })
+
+        props.chat = chatWith({ messages: [{ ...other, isPinned: true }, own] })
+        await nextTick()
+        await openMenuOn(container, bubbleOf('other'))
+        await choose(container, 'Открепить')
+        expect(onSetMessagePinned).toHaveBeenLastCalledWith({ messageId: 'other', isPinned: false })
+      })
+
+      it('«Получить ссылку» просит ссылку на сообщение', async () => {
+        const onGetLink = vi.fn()
+        const { container } = mount(chatWith({ messages }), { onGetLink })
+        await openMenuOn(container, bubbleOf('other'))
+        await choose(container, 'Получить ссылку')
+        expect(onGetLink).toHaveBeenCalledExactlyOnceWith({ messageId: 'other' })
+      })
+
+      it('«Удалить» просит подтверждение, а само ничего не удаляет', async () => {
+        const onRequestDelete = vi.fn()
+        const onDeleteMessages = vi.fn()
+        const { container } = mount(chatWith({ messages }), { onRequestDelete, onDeleteMessages })
+        await openMenuOn(container, bubbleOf('other'))
+        await choose(container, 'Удалить')
+        expect(onRequestDelete).toHaveBeenCalledExactlyOnceWith({ message: other })
+        expect(onDeleteMessages).not.toHaveBeenCalled()
+      })
     })
   })
 })
