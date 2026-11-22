@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { ChatEvents, ChatId, OpenChat } from '../../types'
+import type { ComposerMode } from '../composer/composerMode'
 import MessageComposer from '../composer/MessageComposer.vue'
 import FooterActionBar from './FooterActionBar.vue'
 import ReadOnlyNotice from './ReadOnlyNotice.vue'
 
-const props = defineProps<{ chat: OpenChat }>()
+const props = defineProps<{ chat: OpenChat; composerMode?: ComposerMode }>()
 
 const emit = defineEmits<{
   setChatMuted: [payload: { chatId: ChatId; isMuted: boolean }]
@@ -13,6 +14,7 @@ const emit = defineEmits<{
   changeDraft: ChatEvents['changeDraft']
   sendMessage: ChatEvents['sendMessage']
   editMessage: ChatEvents['editMessage']
+  cancelMode: []
 }>()
 </script>
 
@@ -20,9 +22,11 @@ const emit = defineEmits<{
   <footer v-if="chat.footer.type === 'input'" class="chat-footer chat-footer--composer">
     <MessageComposer
       :draft="chat.draft"
+      :mode="composerMode"
       @change-draft="emit('changeDraft', $event)"
       @send-message="emit('sendMessage', $event)"
       @edit-message="emit('editMessage', $event)"
+      @cancel-mode="emit('cancelMode')"
     />
   </footer>
   <footer v-else class="chat-footer">

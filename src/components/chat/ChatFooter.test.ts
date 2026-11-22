@@ -40,6 +40,31 @@ describe('ChatFooter', () => {
       expect(onChangeDraft).toHaveBeenCalledWith({ text: [{ text: 'При' }] })
     })
 
+    it('показывает плашку ответа, когда задан режим', () => {
+      const container = mount(
+        { type: 'input' },
+        {},
+        {
+          composerMode: { kind: 'reply', messageId: 'm1', authorName: 'Иван', text: 'Привет' },
+        },
+      )
+      expect(container.querySelector('.chat-composer-reply__title')?.textContent).toBe('Ответ Иван')
+    })
+
+    it('отмена режима поднимается наверх', () => {
+      const onCancelMode = vi.fn()
+      const container = mount(
+        { type: 'input' },
+        {},
+        {
+          composerMode: { kind: 'reply', messageId: 'm1', authorName: 'Иван', text: 'Привет' },
+          onCancelMode,
+        },
+      )
+      container.querySelector<HTMLElement>('.chat-composer-reply button')?.click()
+      expect(onCancelMode).toHaveBeenCalledOnce()
+    })
+
     it('сообщает об отправке', () => {
       const onSendMessage = vi.fn()
       const container = mount({ type: 'input' }, { draft: [{ text: 'Привет' }] }, { onSendMessage })

@@ -263,4 +263,49 @@ describe('useFakeEngine', () => {
     engine.listeners.setChatMuted({ chatId: channelId, isMuted: true })
     expect(engine.openChat.value?.isMuted).toBe(true)
   })
+
+  describe('закрепление, правка и удаление', () => {
+    const find = (engine: ReturnType<typeof useFakeEngine>, id: string) => {
+      const message = engine.openChat.value?.messages.find((item) => item.id === id)
+      return message?.type === 'user' ? message : undefined
+    }
+
+    it('закрепляет и открепляет сообщение', () => {
+      const engine = openedEngine()
+      engine.listeners.setMessagePinned({ messageId: 'm170', isPinned: true })
+      expect(find(engine, 'm170')?.isPinned).toBe(true)
+      engine.listeners.setMessagePinned({ messageId: 'm170', isPinned: false })
+      expect(find(engine, 'm170')?.isPinned).toBe(false)
+    })
+
+    it('правка меняет текст и помечает сообщение изменённым', () => {
+      const engine = openedEngine()
+      engine.listeners.editMessage({ messageId: 'm170', text: [{ text: 'Новый текст' }] })
+      expect(find(engine, 'm170')?.text).toEqual([{ text: 'Новый текст' }])
+      expect(find(engine, 'm170')?.editedAt).toBeInstanceOf(Date)
+    })
+
+    it('отправленное сообщение тоже можно изменить', () => {
+      const engine = openedEngine()
+      engine.listeners.sendMessage({ text: [{ text: 'Привет' }] })
+      engine.listeners.editMessage({ messageId: 'local-1', text: [{ text: 'Привет, мир' }] })
+      expect(find(engine, 'local-1')?.text).toEqual([{ text: 'Привет, мир' }])
+    })
+
+    it('удалённых сообщений в чате больше нет, и после возврата тоже', () => {
+      const engine = openedEngine()
+      engine.listeners.deleteMessages({ messageIds: ['m170', 'm171'], scope: 'self' })
+      expect(loadedIds(engine)).not.toContain('m170')
+      expect(loadedIds(engine)).not.toContain('m171')
+      engine.listeners.closeChat()
+      engine.listeners.selectChat({ chatId })
+      expect(loadedIds(engine)).not.toContain('m170')
+    })
+
+    it('запрос ссылки записывается в журнал', () => {
+      const engine = openedEngine()
+      engine.listeners.getLink({ messageId: 'm170' })
+      expect(engine.log.value[0]).toContain('getLink m170')
+    })
+  })
 })

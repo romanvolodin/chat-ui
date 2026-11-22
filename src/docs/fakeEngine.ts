@@ -29,6 +29,9 @@ interface ChatState {
   to: number
   sent: UserMessage[]
   reactions: Record<MessageId, Reaction[]>
+  pinned: Record<MessageId, boolean>
+  edits: Record<MessageId, FormattedText>
+  deleted: Set<MessageId>
 }
 
 export interface FakeEngineOptions {
@@ -70,13 +73,23 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
   }
 
   function build(state: ChatState): OpenChat {
-    const loaded = createSampleMessages(state.from, state.to).map((message) => {
+    const withOverrides = (message: Message): Message => {
+      if (message.type !== 'user') return message
       const reactions = state.reactions[message.id]
-      return message.type === 'user' && reactions ? { ...message, reactions } : message
-    })
+      const isPinned = state.pinned[message.id]
+      const edited = state.edits[message.id]
+      return {
+        ...message,
+        ...(reactions ? { reactions } : {}),
+        ...(isPinned === undefined ? {} : { isPinned }),
+        ...(edited ? { text: edited, editedAt: new Date(sampleNow.getTime() + 30 * 60_000) } : {}),
+      }
+    }
+    const loaded = createSampleMessages(state.from, state.to)
+    const all = state.to === LAST ? [...loaded, ...state.sent] : loaded
     return {
       ...state.chat,
-      messages: state.to === LAST ? [...loaded, ...state.sent] : loaded,
+      messages: all.filter((message) => !state.deleted.has(message.id)).map(withOverrides),
       hasMoreBefore: state.from > FIRST,
       hasMoreAfter: state.to < LAST,
     }
@@ -103,6 +116,9 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
       to: LAST,
       sent: [],
       reactions: {},
+      pinned: {},
+      edits: {},
+      deleted: new Set(),
     }
   }
 
@@ -252,6 +268,39 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
       state.reactions[messageId] = nextReactions(message.reactions ?? [], icon, isSet)
       publish(openChat.value.id)
       addToLog(`setReaction ${messageId} ${iconKey(icon)} ${isSet ? 'поставлена' : 'снята'}`)
+    },
+
+    setMessagePinned({ messageId, isPinned }: ChatEvents['setMessagePinned'][0]) {
+      const state = currentState()
+      if (!state || !openChat.value) return
+      state.pinned[messageId] = isPinned
+      publish(openChat.value.id)
+      addToLog(`setMessagePinned ${messageId} ${isPinned ? 'закреплено' : 'откреплено'}`)
+    },
+
+    // Правка текста: сообщение получает пометку «изменено»
+    editMessage({ messageId, text }: ChatEvents['editMessage'][0]) {
+      const state = currentState()
+      if (!state || !openChat.value) return
+      state.edits[messageId] = text
+      publish(openChat.value.id)
+      addToLog(`editMessage ${messageId}`)
+    },
+
+    deleteMessages({ messageIds, scope }: ChatEvents['deleteMessages'][0]) {
+      const state = currentState()
+      if (!state || !openChat.value) return
+      for (const id of messageIds) state.deleted.add(id)
+      publish(openChat.value.id)
+      addToLog(
+        `deleteMessages ${messageIds.join(', ')} (${scope === 'self' ? 'у себя' : 'у всех'})`,
+      )
+    },
+
+    // Настоящий движок вернёт адрес в `requestedLink`; здесь только записываем запрос
+    getLink(payload: ChatEvents['getLink'][0]) {
+      const target = 'messageId' in payload ? payload.messageId : payload.chatId
+      addToLog(`getLink ${target} → https://example.com/${openChat.value?.id ?? ''}/${target}`)
     },
 
     setChatMuted({ isMuted }: ChatEvents['setChatMuted'][0]) {

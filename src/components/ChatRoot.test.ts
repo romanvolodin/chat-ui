@@ -257,6 +257,32 @@ describe('ChatRoot', () => {
       })
     })
 
+    it('закрепление сообщения из меню доходит до движка', async () => {
+      const onSetMessagePinned = vi.fn()
+      const chat: OpenChat = {
+        ...openChat,
+        messages: [
+          {
+            type: 'user',
+            id: '1',
+            authorId: 'ivan',
+            sentAt: new Date('2026-11-17T12:00:00Z'),
+            text: [{ text: 'Привет' }],
+          },
+        ],
+      }
+      const { container } = mount({ openChat: chat, onSetMessagePinned })
+      container
+        .querySelector('.chat-bubble')
+        ?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
+      await nextTick()
+      const pin = Array.from(container.querySelectorAll<HTMLElement>('.chat-menu__item')).find(
+        (item) => item.textContent.trim() === 'Закрепить',
+      )
+      pin?.click()
+      expect(onSetMessagePinned).toHaveBeenCalledWith({ messageId: '1', isPinned: true })
+    })
+
     it('отмечает открытый чат в списке', () => {
       const { container } = mount({ openChat })
       const selected = container.querySelectorAll('.chat-list-item--selected')
