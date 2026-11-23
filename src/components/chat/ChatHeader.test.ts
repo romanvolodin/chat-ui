@@ -41,4 +41,12 @@ describe('ChatHeader', () => {
     const button = mount({ chat: pinnedChat }).querySelector('.chat-header__back button')
     expect(button?.getAttribute('aria-label')).toBe('К списку чатов')
   })
+
+  it('кнопка поиска просит открыть поиск по чату', () => {
+    const onOpenSearch = vi.fn()
+    const container = mount({ chat: pinnedChat, onOpenSearch })
+    const button = container.querySelector<HTMLElement>('button[aria-label="Поиск по чату"]')
+    button?.click()
+    expect(onOpenSearch).toHaveBeenCalledOnce()
+  })
 })

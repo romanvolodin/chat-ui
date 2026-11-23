@@ -8,6 +8,7 @@ import type {
   ListId,
   MessageId,
   OpenChat,
+  SearchResults,
   UserId,
   UserMessage,
 } from '../../types'
@@ -17,6 +18,7 @@ import DeleteMessagesDialog from '../message/DeleteMessagesDialog.vue'
 import MessageList from '../messages/MessageList.vue'
 import ChatFooter from './ChatFooter.vue'
 import ChatHeader from './ChatHeader.vue'
+import ChatSearchBar from './ChatSearchBar.vue'
 import PinnedMessagesBar from './PinnedMessagesBar.vue'
 
 withDefaults(
@@ -24,8 +26,12 @@ withDefaults(
     chat: OpenChat
     /** Движок подгружает сообщения этого чата. */
     isLoadingMessages?: boolean
+    /** Результаты поиска из данных: поиск по чату берёт из них внутричатовые. */
+    searchResults?: SearchResults
+    /** Движок ищет. */
+    isSearchLoading?: boolean
   }>(),
-  { isLoadingMessages: false },
+  { isLoadingMessages: false, searchResults: undefined, isSearchLoading: false },
 )
 
 const emit = defineEmits<{
@@ -47,7 +53,10 @@ const emit = defineEmits<{
   getLink: ChatEvents['getLink']
   deleteMessages: ChatEvents['deleteMessages']
   openPinned: ChatEvents['openPinned']
+  search: ChatEvents['search']
 }>()
+
+const isSearchOpen = ref(false)
 
 const list = useTemplateRef<InstanceType<typeof MessageList>>('list')
 
@@ -89,7 +98,15 @@ function confirmDelete(scope: 'self' | 'everyone') {
 
 <template>
   <div class="chat-view">
-    <ChatHeader :chat="chat" @close-chat="emit('closeChat')" />
+    <ChatHeader :chat="chat" @close-chat="emit('closeChat')" @open-search="isSearchOpen = true" />
+    <ChatSearchBar
+      v-if="isSearchOpen"
+      :results="searchResults"
+      :is-loading="isSearchLoading"
+      @search="emit('search', $event)"
+      @go-to-message="list?.goToMessage($event.messageId)"
+      @close="isSearchOpen = false"
+    />
     <!-- Нажатие на закреплённое идёт тем же путём, что и на цитату: загруженное показываем сами, далёкое просим у движка -->
     <PinnedMessagesBar
       :pinned="chat.pinned ?? []"

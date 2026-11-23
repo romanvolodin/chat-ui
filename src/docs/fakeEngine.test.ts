@@ -367,4 +367,84 @@ describe('useFakeEngine', () => {
       expect(engine.requestedLink.value).toEqual(first)
     })
   })
+
+  describe('поиск по чату', () => {
+    const search = (engine: ReturnType<typeof useFakeEngine>, query: string) => {
+      engine.listeners.search({ query, scope: 'chat' })
+      return engine.searchResults.value
+    }
+
+    it('отвечает тем же запросом и областью и перечисляет найденные сообщения от новых к старым', () => {
+      const results = search(openedEngine(), 'принято')
+      expect(results?.scope).toBe('chat')
+      expect(results?.query).toBe('принято')
+      const ids = results?.scope === 'chat' ? results.messageIds : []
+      expect(ids.length).toBeGreaterThan(3)
+      const numbers = ids.map((id) => Number(id.replace('m', '')))
+      expect(numbers).toEqual([...numbers].sort((a, b) => b - a))
+    })
+
+    it('ищет без учёта регистра', () => {
+      const lower = search(openedEngine(), 'принято')
+      const upper = search(openedEngine(), 'ПРИНЯТО')
+      expect(lower?.scope === 'chat' && lower.messageIds.length).toBe(
+        upper?.scope === 'chat' && upper.messageIds.length,
+      )
+    })
+
+    it('если ничего нет, возвращает пустой список', () => {
+      const results = search(openedEngine(), 'такого-текста-нет')
+      expect(results?.scope === 'chat' && results.messageIds).toEqual([])
+    })
+
+    it('находит отправленное и не находит удалённое', () => {
+      const engine = openedEngine()
+      engine.listeners.sendMessage({ text: [{ text: 'Уникальнейшее слово' }] })
+      const sent = search(engine, 'уникальнейшее')
+      expect(sent?.scope === 'chat' && sent.messageIds).toEqual(['local-1'])
+      engine.listeners.deleteMessages({ messageIds: ['local-1'], scope: 'self' })
+      const deleted = search(engine, 'уникальнейшее')
+      expect(deleted?.scope === 'chat' && deleted.messageIds).toEqual([])
+    })
+
+    it('учитывает правку текста', () => {
+      const engine = openedEngine()
+      engine.listeners.editMessage({
+        messageId: 'm170',
+        text: [{ text: 'Совершенно новый текст' }],
+      })
+      const results = search(engine, 'совершенно новый')
+      expect(results?.scope === 'chat' && results.messageIds).toEqual(['m170'])
+    })
+
+    it('общий поиск пока не поддерживает', () => {
+      const engine = openedEngine()
+      engine.listeners.search({ query: 'принято', scope: 'global' })
+      expect(engine.searchResults.value).toBeUndefined()
+    })
+
+    it('пока ищет, список «результаты поиска» отмечен как загружаемый', async () => {
+      vi.useFakeTimers()
+      const engine = openedEngine(800)
+      engine.listeners.search({ query: 'принято', scope: 'chat' })
+      expect(engine.loadingLists.value).toEqual(['searchResults'])
+      await vi.advanceTimersByTimeAsync(400)
+      expect(engine.loadingLists.value).toEqual([])
+      expect(engine.searchResults.value).toBeDefined()
+      vi.useRealTimers()
+    })
+
+    it('поиск и подгрузка истории не сбивают индикаторы друг друга', async () => {
+      vi.useFakeTimers()
+      const engine = openedEngine(800)
+      engine.listeners.reachedTop()
+      engine.listeners.search({ query: 'принято', scope: 'chat' })
+      expect(engine.loadingLists.value.sort()).toEqual(['messages', 'searchResults'])
+      await vi.advanceTimersByTimeAsync(400)
+      expect(engine.loadingLists.value).toEqual(['messages'])
+      await vi.advanceTimersByTimeAsync(400)
+      expect(engine.loadingLists.value).toEqual([])
+      vi.useRealTimers()
+    })
+  })
 })

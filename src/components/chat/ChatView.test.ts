@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, reactive } from 'vue'
 import { channelChat, pinnedChat } from '../../docs/sampleData'
 import { sampleMessages } from '../../docs/sampleMessages'
 import { mountWithChatContext } from '../../test-utils/mountWithChatContext'
@@ -397,6 +397,99 @@ describe('ChatView', () => {
       mounted = mountWithChatContext(ChatView, { chat: pinnedChat(), onOpenPinned })
       mounted.container.querySelector<HTMLElement>('.chat-pinned-bar .chat-icon-button')?.click()
       expect(onOpenPinned).toHaveBeenCalledExactlyOnceWith({ chatId: chat.id })
+    })
+  })
+
+  describe('поиск по чату', () => {
+    const near: Message = {
+      type: 'user',
+      id: 'near',
+      authorId: 'ivan',
+      sentAt: new Date('2026-11-17T12:00:00Z'),
+      text: [{ text: 'Сбор в 8:00' }],
+    }
+    const searchable: OpenChat = { ...chat, messages: [near] }
+    const openSearch = async (container: HTMLElement) => {
+      container.querySelector<HTMLElement>('button[aria-label="Поиск по чату"]')?.click()
+      await nextTick()
+    }
+    const searchFor = async (container: HTMLElement, query: string) => {
+      const field = container.querySelector<HTMLInputElement>('.chat-search-input__field')
+      if (!field) throw new Error('Нет поля поиска')
+      field.value = query
+      field.dispatchEvent(new Event('input'))
+      await nextTick()
+      field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }))
+      await nextTick()
+    }
+
+    it('по умолчанию поиска нет, лупа в шапке его открывает и ставит курсор в поле', async () => {
+      mounted = mountWithChatContext(ChatView, { chat: searchable })
+      expect(mounted.container.querySelector('.chat-search-bar')).toBeNull()
+      await openSearch(mounted.container)
+      expect(mounted.container.querySelector('.chat-search-bar')).not.toBeNull()
+      expect(document.activeElement).toBe(
+        mounted.container.querySelector('.chat-search-input__field'),
+      )
+    })
+
+    it('строка поиска стоит сразу под шапкой', async () => {
+      mounted = mountWithChatContext(ChatView, { chat: searchable })
+      await openSearch(mounted.container)
+      const view = mounted.container.querySelector('.chat-view')
+      const order = Array.from(view?.children ?? []).map((element) => element.className)
+      expect(order.slice(0, 2)).toEqual(['chat-header', 'chat-search-bar'])
+    })
+
+    it('запрос уходит наружу с областью «чат»', async () => {
+      const onSearch = vi.fn()
+      mounted = mountWithChatContext(ChatView, { chat: searchable, onSearch })
+      await openSearch(mounted.container)
+      await searchFor(mounted.container, 'сбор')
+      expect(onSearch).toHaveBeenCalledExactlyOnceWith({ query: 'сбор', scope: 'chat' })
+    })
+
+    it('найденное загруженное сообщение показывает само и подсвечивает', async () => {
+      const props = reactive<Record<string, unknown>>({ chat: searchable })
+      mounted = mountWithChatContext(ChatView, props)
+      await openSearch(mounted.container)
+      await searchFor(mounted.container, 'сбор')
+      props.searchResults = { scope: 'chat', query: 'сбор', messageIds: ['near'] }
+      // подсветка включается на следующем такте после перехода, поэтому ждём чуть дольше
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(
+        mounted.container
+          .querySelector('.chat-bubble--highlighted')
+          ?.getAttribute('data-message-id'),
+      ).toBe('near')
+      expect(mounted.container.querySelector('.chat-search-bar__status')?.textContent.trim()).toBe(
+        '1 из 1',
+      )
+    })
+
+    it('найденное далёкое сообщение просит у движка', async () => {
+      const onGoToMessage = vi.fn()
+      const props = reactive<Record<string, unknown>>({ chat: searchable, onGoToMessage })
+      mounted = mountWithChatContext(ChatView, props)
+      await openSearch(mounted.container)
+      await searchFor(mounted.container, 'сбор')
+      props.searchResults = { scope: 'chat', query: 'сбор', messageIds: ['far'] }
+      await nextTick()
+      expect(onGoToMessage).toHaveBeenCalledExactlyOnceWith({ messageId: 'far' })
+    })
+
+    it('пока движок ищет, показывает индикатор', async () => {
+      mounted = mountWithChatContext(ChatView, { chat: searchable, isSearchLoading: true })
+      await openSearch(mounted.container)
+      expect(mounted.container.querySelector('.chat-search-bar .chat-spinner')).not.toBeNull()
+    })
+
+    it('крестик закрывает строку поиска', async () => {
+      mounted = mountWithChatContext(ChatView, { chat: searchable })
+      await openSearch(mounted.container)
+      mounted.container.querySelector<HTMLElement>('button[aria-label="Закрыть поиск"]')?.click()
+      await nextTick()
+      expect(mounted.container.querySelector('.chat-search-bar')).toBeNull()
     })
   })
 })

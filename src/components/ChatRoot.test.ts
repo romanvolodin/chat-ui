@@ -294,6 +294,31 @@ describe('ChatRoot', () => {
       expect(onOpenPinned).toHaveBeenCalledWith({ chatId: chat.id })
     })
 
+    it('поиск по чату: запрос уходит движку, а результаты и загрузка приходят из данных', async () => {
+      const onSearch = vi.fn()
+      const { container, state } = mount({ openChat, onSearch })
+      container.querySelector<HTMLElement>('button[aria-label="Поиск по чату"]')?.click()
+      await nextTick()
+      const field = container.querySelector<HTMLInputElement>(
+        '.chat-search-bar .chat-search-input__field',
+      )
+      if (!field) throw new Error('Нет поля поиска в чате')
+      field.value = 'сбор'
+      field.dispatchEvent(new Event('input'))
+      await nextTick()
+      field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }))
+      expect(onSearch).toHaveBeenCalledExactlyOnceWith({ query: 'сбор', scope: 'chat' })
+
+      state.loadingLists = ['searchResults']
+      await nextTick()
+      expect(container.querySelector('.chat-search-bar .chat-spinner')).not.toBeNull()
+
+      state.loadingLists = []
+      state.searchResults = { scope: 'chat', query: 'сбор', messageIds: ['a', 'b'] }
+      await nextTick()
+      expect(container.querySelector('.chat-search-bar__status')?.textContent.trim()).toBe('1 из 2')
+    })
+
     it('отмечает открытый чат в списке', () => {
       const { container } = mount({ openChat })
       const selected = container.querySelectorAll('.chat-list-item--selected')

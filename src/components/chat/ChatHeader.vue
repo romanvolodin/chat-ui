@@ -8,7 +8,7 @@ import ChatStatusLine from './ChatStatusLine.vue'
 
 const props = defineProps<{ chat: Chat }>()
 
-const emit = defineEmits<{ closeChat: [] }>()
+const emit = defineEmits<{ closeChat: []; openSearch: [] }>()
 
 const { users } = useChatContext()
 
@@ -28,6 +28,7 @@ const isOnline = computed(
       <div class="chat-header__title">{{ chat.title }}</div>
       <ChatStatusLine :chat="chat" />
     </div>
+    <BaseIconButton icon="search" label="Поиск по чату" @click="emit('openSearch')" />
   </header>
 </template>
 

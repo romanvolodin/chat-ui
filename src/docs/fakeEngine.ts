@@ -11,6 +11,7 @@ import type {
   PinnedMessage,
   Reaction,
   ReactionIcon,
+  SearchResults,
   UserMessage,
 } from '../types'
 import { sampleChats, sampleNow } from './sampleData'
@@ -65,6 +66,8 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
   const openChat = ref<OpenChat>()
   const loadingLists = ref<ListId[]>([])
   const requestedLink = ref<{ url: string }>()
+  const searchResults = ref<SearchResults>()
+  const loading = new Set<ListId>()
   const log = ref<string[]>([
     'Откройте любой чат: лента встанет на метку «Непрочитанные сообщения»',
   ])
@@ -130,12 +133,18 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
     }
   }
 
+  function setLoading(list: ListId, isLoading: boolean) {
+    if (isLoading) loading.add(list)
+    else loading.delete(list)
+    loadingLists.value = [...loading]
+  }
+
   /** Загрузка занимает время: пока она идёт, интерфейс показывает индикатор и новых порций не просит. */
   function load(change: () => void) {
-    loadingLists.value = ['messages']
+    setLoading('messages', true)
     const finish = () => {
       change()
-      loadingLists.value = []
+      setLoading('messages', false)
       if (openChat.value) publish(openChat.value.id)
     }
     if (delay > 0) setTimeout(finish, delay)
@@ -186,7 +195,7 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
 
     reachedTop() {
       const state = currentState()
-      if (!state || loadingLists.value.length > 0 || state.from <= FIRST) return
+      if (!state || loading.has('messages') || state.from <= FIRST) return
       addToLog(`reachedTop → грузим сообщения с m${String(Math.max(FIRST, state.from - PORTION))}`)
       load(() => {
         state.from = Math.max(FIRST, state.from - PORTION)
@@ -195,7 +204,7 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
 
     reachedBottom() {
       const state = currentState()
-      if (!state || loadingLists.value.length > 0 || state.to >= LAST) return
+      if (!state || loading.has('messages') || state.to >= LAST) return
       addToLog(`reachedBottom → грузим сообщения до m${String(Math.min(LAST, state.to + PORTION))}`)
       load(() => {
         state.to = Math.min(LAST, state.to + PORTION)
@@ -206,7 +215,7 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
     goToMessage({ messageId }: ChatEvents['goToMessage'][0]) {
       const state = currentState()
       const target = numberOf(messageId)
-      if (!state || !Number.isFinite(target) || loadingLists.value.length > 0) return
+      if (!state || !Number.isFinite(target) || loading.has('messages')) return
       addToLog(`goToMessage ${messageId} → окно вокруг него`)
       load(() => {
         state.from = Math.max(FIRST, target - PORTION)
@@ -216,7 +225,7 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
 
     goToLatest() {
       const state = currentState()
-      if (!state || loadingLists.value.length > 0) return
+      if (!state || loading.has('messages')) return
       addToLog('goToLatest → последние сообщения')
       load(() => {
         state.from = LATEST_FROM
@@ -333,6 +342,34 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
       addToLog(`getLink → ${url}`)
     },
 
+    // Поиск по открытому чату: ищет во всей переписке и отвечает тем же запросом и областью. Порядок от новых к старым
+    search({ query, scope }: ChatEvents['search'][0]) {
+      const state = currentState()
+      if (scope !== 'chat' || !state) return
+      addToLog(`search «${query}» в чате`)
+      setLoading('searchResults', true)
+      const run = () => {
+        const needle = query.toLowerCase()
+        const textOf = (message: Message) =>
+          message.type === 'user'
+            ? (state.edits[message.id] ?? message.text ?? [])
+                .map((segment) => segment.text)
+                .join('')
+            : ''
+        const messageIds = [...createSampleMessages(FIRST, LAST), ...state.sent]
+          .filter(
+            (message) =>
+              !state.deleted.has(message.id) && textOf(message).toLowerCase().includes(needle),
+          )
+          .map((message) => message.id)
+          .reverse()
+        searchResults.value = { scope: 'chat', query, messageIds }
+        setLoading('searchResults', false)
+      }
+      if (delay > 0) setTimeout(run, delay / 2)
+      else run()
+    },
+
     // Чат закреплённых сообщений открывает движок; в историях его нет, поэтому только записываем запрос
     openPinned({ chatId }: ChatEvents['openPinned'][0]) {
       addToLog(`openPinned ${chatId} → чат закреплённых сообщений (в историях не открывается)`)
@@ -353,5 +390,5 @@ export function useFakeEngine({ delay = 800 }: FakeEngineOptions = {}) {
     ),
   )
 
-  return { openChat, loadingLists, requestedLink, log, chats, listeners }
+  return { openChat, loadingLists, requestedLink, searchResults, log, chats, listeners }
 }
