@@ -16,9 +16,15 @@ function clear() {
   input.value?.focus()
 }
 
+function focus() {
+  input.value?.focus()
+}
+
 function onEnter(event: KeyboardEvent) {
   if (!event.isComposing) emit('submit')
 }
+
+defineExpose({ focus })
 </script>
 
 <template>

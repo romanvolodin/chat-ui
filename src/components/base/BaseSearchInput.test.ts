@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { createApp, h, nextTick } from 'vue'
 import BaseSearchInput from './BaseSearchInput.vue'
 
+let exposed: { focus: () => void } | undefined
+
 interface Handlers {
   onUpdate?: (value: string) => void
   onSubmit?: () => void
@@ -16,6 +18,9 @@ function render(modelValue: string, { onUpdate, onSubmit }: Handlers = {}, place
         placeholder,
         'onUpdate:modelValue': onUpdate,
         onSubmit,
+        ref: (instance: unknown) => {
+          exposed = instance as typeof exposed
+        },
       }),
   }).mount(container)
   const field = container.querySelector<HTMLInputElement>('.chat-search-input__field')
@@ -70,5 +75,13 @@ describe('BaseSearchInput', () => {
     const { container } = render('кино', { onUpdate })
     container.querySelector('button')?.click()
     expect(onUpdate).toHaveBeenCalledWith('')
+  })
+
+  it('по запросу ставит курсор в поле', () => {
+    const { container, field } = render('')
+    document.body.append(container)
+    exposed?.focus()
+    expect(document.activeElement).toBe(field)
+    container.remove()
   })
 })
