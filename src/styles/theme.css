@@ -27,6 +27,7 @@
   --chat-on-accent-muted: hsl(168deg 37% 90%);
   --chat-accent-text: color-mix(in srgb, var(--chat-accent) 77%, #000);
   --chat-accent-tint: color-mix(in srgb, var(--chat-accent) 19%, transparent);
+  --chat-highlight-color: color-mix(in srgb, var(--chat-text-color) 22%, transparent);
   --chat-danger: #e5484d;
   --chat-on-danger: #fff;
 

@@ -44,11 +44,9 @@ const authorName = computed(() =>
 <style>
 .chat-system-message {
   display: flex;
+  position: relative;
   justify-content: center;
-}
-
-.chat-system-message--highlighted .chat-pill {
-  animation: chat-bubble-highlight 1.5s ease-out;
+  isolation: isolate;
 }
 
 .chat-system-message .chat-message-text {

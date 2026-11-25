@@ -1,4 +1,8 @@
 import type { Decorator, Preview } from '@storybook/vue3-vite'
+// Стили подключаем здесь: если взять их через `../src/index`, при сборке Storybook (не в dev) этот модуль
+// вырезается как неиспользуемый, и вместе с ним пропадает тема
+import '../src/styles/theme.css'
+import '../src/styles/root.css'
 import '../src/index'
 import { fontFamilies, fontToolbarItems } from '../src/docs/fonts'
 

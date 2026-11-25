@@ -110,27 +110,6 @@ const meta = computed(() => ({
   border-bottom-right-radius: var(--chat-bubble-radius-tail);
 }
 
-@keyframes chat-bubble-highlight {
-  from {
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--chat-accent) 55%, transparent);
-  }
-
-  to {
-    box-shadow: 0 0 0 6px transparent;
-  }
-}
-
-.chat-bubble--highlighted {
-  animation: chat-bubble-highlight 1.5s ease-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .chat-bubble--highlighted {
-    outline: 2px solid var(--chat-accent);
-    animation: none;
-  }
-}
-
 .chat-bubble__header {
   margin-bottom: 2px;
 }

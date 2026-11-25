@@ -618,12 +618,14 @@ describe('MessageList', () => {
       expect(scrollToSpy()).toHaveBeenLastCalledWith({ top: before + 800, behavior: 'smooth' })
     })
 
-    it('подсвечивает сообщение и через полторы секунды убирает подсветку', async () => {
+    it('подсвечивает сообщение и через две секунды убирает подсветку', async () => {
       const messages = [userMessage('1', 'anna', 9), replyingTo('1')]
       const { container } = mount(chatWith({ messages }))
       await clickQuote(container)
       expect(highlightedIds(container)).toEqual(['1'])
-      await vi.advanceTimersByTimeAsync(1500)
+      await vi.advanceTimersByTimeAsync(1999)
+      expect(highlightedIds(container)).toEqual(['1'])
+      await vi.advanceTimersByTimeAsync(1)
       expect(highlightedIds(container)).toEqual([])
     })
 
@@ -665,10 +667,10 @@ describe('MessageList', () => {
       const messages = [userMessage('1', 'anna', 9), replyingTo('1')]
       const { container } = mount(chatWith({ messages }))
       await clickQuote(container)
-      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(1500)
       await clickQuote(container)
-      await vi.advanceTimersByTimeAsync(1000)
-      // от второго перехода прошла секунда, подсветка ещё держится
+      await vi.advanceTimersByTimeAsync(1500)
+      // от второго перехода прошло полторы секунды, подсветка ещё держится
       expect(highlightedIds(container)).toEqual(['1'])
       await vi.advanceTimersByTimeAsync(600)
       expect(highlightedIds(container)).toEqual([])

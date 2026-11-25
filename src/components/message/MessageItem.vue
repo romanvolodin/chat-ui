@@ -55,6 +55,25 @@ const isHidden = computed(() => users.value[props.message.authorId]?.isBlocked =
 <style>
 .chat-message-item {
   display: flex;
+  position: relative;
   flex-direction: column;
+  isolation: isolate;
+}
+
+.chat-message-item:has(> .chat-bubble--highlighted)::before,
+.chat-system-message--highlighted::before {
+  position: absolute;
+  inset: -2px -100vw;
+  z-index: -1;
+  animation: chat-row-highlight 2s ease-out forwards;
+  background-color: var(--chat-highlight-color);
+  content: '';
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-message-item:has(> .chat-bubble--highlighted)::before,
+  .chat-system-message--highlighted::before {
+    animation: none;
+  }
 }
 </style>
